@@ -1,7 +1,7 @@
 ---
 name: adauga-copywriter
-description: "Adaugă un agent COPYWRITER (worker text care primește imagine+brief și scrie textul de reclamă) peste o echipă Hermes existentă. Default Ryan Howard (The Office) cu fișiere gata-făcute; opțional persona custom (alt nume/caracter). Topologie hub: copywriter-ul e gated, raportează DOAR la CEO, fără buclă. Flux: CEO → worker imagini → copywriter (imagine+brief) → CEO livrează imagine+copy."
-version: 1.0.0
+description: "Adaugă un agent COPYWRITER (worker text care primește imagine+brief și scrie textul de reclamă) peste o echipă Hermes existentă. Default Ryan Howard (The Office) cu fișiere gata-făcute; opțional persona custom (alt nume/caracter). Topologie hub: copywriter-ul e gated, raportează DOAR la CEO, fără buclă. Necesită un worker de imagini (artist). Wire-uiește lanțul AUTOMAT: CEO recunoaște o cerere de reclamă → artist (imagine) → copywriter (imagine+brief) → CEO livrează imagine+copy în General — fără ca omul să ceară explicit copy."
+version: 1.0.2
 author: silviu
 license: Apache-2.0
 platforms: [linux, darwin, win32]
@@ -18,8 +18,27 @@ primește o **imagine** (trimisă de CEO în topicul lui) + un **brief** și în
 advertisement** (headline / body / CTA). Topologie **hub**: copywriter-ul are botul + topicul
 lui, e **gated**, vorbește DOAR cu CEO-ul. Doar CEO-ul rămâne liber → fără buclă.
 
-Self-contained: `scripts/` (`delegate.py` cu suport `--image`, `manage.py`, `monitor.py`),
-`templates/` (fișierele exacte ale lui Ryan + skeleton custom + config-changes).
+Self-contained: `scripts/` (`delegate.py` cu suport `--image`, `manage.py`, `monitor.py`,
+`patch_artist_delegate.py`), `templates/` (fișierele exacte ale lui Ryan + skeleton custom +
+config-changes).
+
+## CE FACE AUTOMAT (lecțiile de azi, baked-in) — nu re-depana
+Acest skill nu doar adaugă botul copywriter; **wire-uiește lanțul imagine→copy ca să meargă
+AUTONOM**, fără ca omul să ceară explicit „și scrie-mi un text":
+1. **Decizie autonomă în CEO (PASUL 0 în SOUL):** când omul cere o **reclamă / poster / ad / anunț
+   / banner / campanie / post de Facebook-Instagram**, CEO-ul tratează cererea implicit ca
+   **IMAGINE + COPY** (nu doar imagine). Doar un vizual simplu fără text rămâne „doar imagine".
+2. **Semnal cross-session prin `--note` (NEEDS_COPY):** CEO-ul decide în sesiunea General, dar
+   aprobă imaginea în sesiunea Art (SEPARATĂ, fără brief-ul din General). De aceea la delegarea
+   către artist atașează `--note "NEEDS_COPY — brief copy (RO): ..."`, care se **stochează în brief**
+   (recuperabil cu `--show-brief`) dar **NU se trimite artistului** (n-o desenează). Patch-ul
+   `patch_artist_delegate.py` adaugă acest `--note` (+ citire robustă a tokenului) în `delegate.py`
+   al artistului, idempotent.
+3. **Livrare condiționată:** dacă brief-ul conține `NEEDS_COPY`, CEO-ul **NU livrează imaginea
+   goală**; ia calea imaginii din pointerul artistului (`last_image.txt`), deleagă copy-ul lui Ryan,
+   apoi livrează O SINGURĂ DATĂ în General imaginea **cu copy-ul în caption**.
+4. **Test în 2 trepte:** mecanic (delegare directă) **+** autonom (omul trimite o cerere reală de
+   reclamă, tu monitorizezi tot lanțul și confirmi că copywriter-ul VEDE imaginea înainte să scrie).
 
 ## REGULĂ DE INTERACȚIUNE (obligatorie)
 **Orice** întrebare către utilizator se pune prin tool-ul **AskUserQuestion**, niciodată text
@@ -44,6 +63,18 @@ Valorile pe care le poți obține singur (topic id, group id) le iei TU (rulezi 
 
 ---
 
+## Pas 0 — Există deja un copywriter? (idempotență)
+Verifică dacă echipa are deja un copywriter (un profil gated cu topic „Copywriting" sau un skill
+`assign-to-*` al CEO-ului care țintește un copywriter). Dacă DA:
+
+> APELEAZĂ AskUserQuestion:
+> Î1 — „Există deja un copywriter (`<slug>`). Ce facem?"
+>   opțiuni: ["Re-aplică doar patch-urile (SOUL + --note)"], ["Adaugă unul nou (alt slug)"], ["Ies"]
+
+- „Re-aplică patch-urile" → sari peste crearea botului/profilului; mergi direct la Pas 6.5 (patch
+  artist) + Pas 7 (SOUL CEO) + Pas 8 (test). Toate sunt idempotente.
+- „Adaugă unul nou" → continuă normal cu un slug diferit.
+
 ## Pas 1 — Inspectează echipa existentă
 - **team.json LIVE** = `~/.hermes/team.json` (HERMES_HOME) — manifestul **canonic** al echipei,
   ținut în HERMES_HOME ca să rămână editabil și când skill-ul rulează dintr-un cache de plugin
@@ -54,14 +85,27 @@ Valorile pe care le poți obține singur (topic id, group id) le iei TU (rulezi 
 - Din `.env`-ul CEO-ului citește: `TELEGRAM_GROUP_ALLOWED_CHATS` (group id) și
   `TELEGRAM_ALLOWED_TOPICS` (topicuri actuale). Notează workerii existenți (skill-urile
   `assign-to-*` din profilul CEO-ului).
-- **Worker de imagini (upstream)?** Verifică dacă există un worker care produce imagini (ex. unul
-  cu skill `image-studio` / `gen_image.py`). Dacă NU există, avertizează utilizatorul:
+- **Worker de imagini (artist) — OBLIGATORIU.** Lanțul imagine→copy are nevoie de un worker care
+  produce imagini. Identifică candidații: profiluri gated al căror skill `assign-to-*` din profilul
+  CEO-ului are **`deliver.py`** și un pointer **`cache/images/last_image.txt`** (sau skill
+  `image-studio` / `gen_image.py`). Reține pentru artistul ales:
+  - `<ARTIST_SLUG>` și calea `assign-to-<ARTIST_SLUG>/scripts/delegate.py` (ținta patch-ului);
+  - calea `assign-to-<ARTIST_SLUG>/scripts/deliver.py` (livrarea imagine+caption);
+  - `<ARTIST_IMAGES_DIR>` din `deliver.json` (unde e `last_image.txt`).
+
+  **Confirmă/alege artistul prin AskUserQuestion** (chiar dacă pare evident un singur candidat):
 
 > APELEAZĂ AskUserQuestion (exemplu literal):
-> Întrebarea 1 — „Nu am găsit un worker de imagini. Fluxul imagine→copy nu va avea sursă automată (copywriter-ul lucrează doar pe imagini trimise direct de CEO). Continuăm?"
->   opțiuni: ["Da, continuă"], ["Nu, mă opresc"]
+> Întrebarea 1 — „Care worker e artistul (sursa imaginilor pentru copy)?"
+>   opțiuni: [<candidat_1>], [<candidat_2>], ... (dacă e unul singur, tot confirmă-l)
 
-  Continuă doar dacă a ales „Da".
+  **Dacă NU există niciun worker de imagini → OPREȘTE-TE** (lanțul automat depinde de el):
+
+> APELEAZĂ AskUserQuestion (exemplu literal):
+> Întrebarea 1 — „Nu am găsit un worker de imagini. Copywriter-ul are nevoie de un artist (rulează întâi skill-ul adauga-artist). Ce facem?"
+>   opțiuni: ["Mă opresc (adaug întâi artistul)"], ["Continuă oricum (copy-only, fără lanț automat)"]
+
+  Implicit oprește-te; continuă DOAR dacă utilizatorul alege explicit „Continuă oricum".
 
 ## Pas 2 — Alege persona (prin AskUserQuestion)
 Topicul copywriter-ului este **fix „Copywriting" — NU întreba**. Întreabă restul într-un apel:
@@ -148,42 +192,136 @@ Reține `<TOPIC_ID>` și `<GROUP_ID>`.
 - `SKILL.md` din `templates/assign-to-copywriter.SKILL.md` cu placeholderele înlocuite
   (`<SLUG>`, `<NAME>`, `<VENV_PYTHON>`, `<CEO_PROFILE>`, `<COPYWRITER_USERNAME>`, `<TOPIC_NAME>`, `<LANGUAGE>`, `<MAX_ROUNDS>`).
 
-## Pas 7 — Actualizează CEO-ul (cheie!)
-- **`.env` CEO:** adaugă `<TOPIC_ID>` la `TELEGRAM_ALLOWED_TOPICS` (ex. `1,2,<TOPIC_ID>`).
-- **`SOUL.md` CEO:** adaugă fluxul **secvențial complet** (în limba echipei), păstrând LOOP GUARD:
-  1. prezintă noul membru (nume/rol/topic Copywriting, `@<copywriter>`);
-  2. flux: *brief → worker imagini → `assign-to-<slug>` cu **imaginea+brief** (calea din linia
-     `MEDIA:`/`LAST_IMAGE:`) → **review copy AUTONOM** (recuperează criteriile cu
-     `assign-to-<slug>/scripts/delegate.py --show-brief`, fiindcă topicul Copywriting n-are brief-ul
-     din General; fă mereu cel puțin o rundă de rafinare, cere TU îmbunătățiri fără să aștepți omul;
-     cap) → **livrează imagine + copy DETERMINIST în General**: rulează `deliver.py` al ARTISTULUI cu
-     copy-ul final drept caption (`assign-to-<artist_slug>/scripts/deliver.py --caption "<copy>"`) —
-     NU `MEDIA:` în proză (ai fi în topicul greșit) → apoi STOP*;
-  3. regula dură: „ca să delegi copy, rulează skill-ul `assign-to-<slug>` cu `--image` (prima
-     rundă); NU tasta `@<copywriter>` în proză"; cap **per worker**; workerii nu vorbesc între ei.
+## Pas 6.5 — Patch artistul (ca lanțul să meargă AUTONOM)
+`delegate.py` al artistului (din `adauga-artist`) NU are `--note` și citește tokenul doar din
+`HERMES_HOME/.env` (fragil). Rulează patcher-ul idempotent al acestui skill pe `delegate.py` al
+artistului (calea reținută la Pas 1):
 
-## Pas 8 — Înregistrează + repornește + verifică
+```bash
+<venv_python> <acest_skill>/scripts/patch_artist_delegate.py \
+  <CEO_PROFILE>/skills/assign-to-<ARTIST_SLUG>/scripts/delegate.py
+```
+
+- Adaugă `--note` (stocat în brief, recuperabil cu `--show-brief`, NU trimis artistului) + citire
+  robustă a tokenului (`PROFILE_DIR/.env` apoi `HERMES_HOME/.env`).
+- **Idempotent:** dacă e deja patch-uit → `ALREADY_PATCHED` (nicio schimbare). Validează că noul
+  fișier compilează înainte să-l scrie.
+- Dacă printează `ERROR: could not find ... anchor` (un `delegate.py` foarte diferit) → aplică
+  manual cele 2 modificări (vezi comentariile din patcher) și NU continua orbește.
+
+## Pas 7 — Actualizează CEO-ul (cheie! — aici trăiește decizia autonomă)
+- **`.env` CEO:** adaugă `<TOPIC_ID>` la `TELEGRAM_ALLOWED_TOPICS` (ex. `1,2,<TOPIC_ID>`).
+- **`SOUL.md` CEO — RESTRUCTUREAZĂ, nu doar adăuga.** Editarea trebuie să fie robustă: ancorează pe
+  titlurile fluxului de imagine scris de `adauga-artist` („Cum lucrezi cu Pam/<artist>", pasul de
+  livrare); dacă tiparul lipsește, **rescrie coerent întreaga secțiune de workflow ad**. Inserează,
+  în limba echipei:
+
+  **(a) Prezintă membrul nou** în „Your team": `<NAME>` — copywriter (`@<copywriter>`), topic
+  „Copywriting", scrie textul de reclamă (headline/body/CTA) din imagine + brief; e SINGURUL om de
+  copy; nu face imagini; vorbește DOAR cu CEO-ul.
+
+  **(b) PASUL 0 — poartă de decizie (bloc proeminent, ÎNAINTEA fluxului de imagine):**
+  - Cuvinte ca **reclamă / ad / advertising / poster / anunț / campanie / banner / promo / post de
+    Facebook-Instagram** — sau cerere explicită de **text / slogan / headline / CTA / copy** →
+    cererea e **„IMAGINE + COPY"** (implicit pentru reclame; în dubiu, presupune că vrea copy).
+  - Doar un vizual simplu fără text de vânzare („o ilustrație cu…", „un desen", „o poză cu…") →
+    **„DOAR IMAGINE"**.
+  - **CEO-ul decide ce text merge PE imagine vs. ce duce Ryan:** dacă vrea text overlay pe imagine,
+    îl pune în promptul (englez) al artistului; copy-ul de post/caption (RO) îl scrie Ryan.
+
+  **(c) La delegarea către artist (runda 1), dacă e „IMAGINE + COPY": atașează `--note`** —
+  reaminteșe-ți în sesiunea Art (separată) că urmează copy-ul:
+  ```bash
+  <venv_python> <CEO_PROFILE>/skills/assign-to-<ARTIST_SLUG>/scripts/delegate.py \
+    --prompt "<prompt englez de imagine, fără copy-ul de post>" \
+    --note "NEEDS_COPY — brief copy (RO): <ce slogan/headline/body/CTA vrea omul, ton, public>"
+  ```
+
+  **(d) La review-ul imaginii (sesiunea Art), recuperează brief-ul** cu
+  `assign-to-<ARTIST_SLUG>/scripts/delegate.py --show-brief` (topicul Art n-are brief-ul din
+  General). Fă MEREU cel puțin o rundă de rafinare a imaginii. **Verifică dacă brief-ul conține
+  `NEEDS_COPY`.**
+
+  **(e) Livrare CONDIȚIONATĂ — ramifică:**
+  - ⛔ **Dacă brief-ul conține `NEEDS_COPY` → NU LIVRA imaginea acum.** Ia calea imaginii aprobate
+    din pointer:
+    ```bash
+    <venv_python> -c "print(open(r'<ARTIST_IMAGES_DIR>/last_image.txt',encoding='utf-8').read().strip())"
+    ```
+    Deleagă copy-ul DOAR prin `assign-to-<slug>` cu `--image <calea de mai sus>` (runda 1; rundele
+    de feedback fără `--image`). Folosește brief-ul copy (RO) de după `NEEDS_COPY —`. **Review copy
+    AUTONOM** (limba corectă, se potrivește cu imaginea + brief-ul; cap per worker). Apoi
+    **livrează O SINGURĂ DATĂ imaginea cu copy-ul în CAPTION**, prin `deliver.py` al artistului:
+    ```bash
+    <venv_python> <CEO_PROFILE>/skills/assign-to-<ARTIST_SLUG>/scripts/deliver.py \
+      --caption "<headline> — <body> — <CTA>  (copy-ul final, în <LANGUAGE>)"
+    ```
+    Apoi **STOP**. (NU `MEDIA:` în proză — ai fi în topicul greșit.)
+  - ✅ **Dacă brief-ul NU conține `NEEDS_COPY`** (cerere „DOAR IMAGINE") → livrezi imaginea normal,
+    ca în fluxul artistului.
+
+  **(f) LOOP GUARD — adaugă regula dură anti-livrare-goală (repetată în secțiunea LOOP GUARD):**
+  „NICIODATĂ nu livra imaginea înainte de copy dacă brief-ul are `NEEDS_COPY` — dacă livrezi
+  imaginea goală, ai ratat tot rostul copywriter-ului." Plus: ca să delegi copy rulează
+  `assign-to-<slug>` cu `--image` (runda 1); NU tasta `@<copywriter>` în proză; cap **per worker**;
+  workerii nu vorbesc între ei.
+
+## Pas 8 — Înregistrează + repornește + verifică (mecanic + AUTONOM)
 - Adaugă `<slug>` în **team.json-ul echipei LIVE** (cel găsit la Pas 1).
 - `<venv_python> <live_manage.py> fresh` (restart + șterge sesiuni — necesar după persona/SOUL nou).
 - Confirmă noul bot „✓ telegram connected", fără erori reale, și **fără** `📬 No home channel`.
-- **Test controlat + monitor auto-kill:**
-  - Pornește în fundal monitorul:
-    `<venv_python> scripts/monitor.py --python <venv_python> --manage <live_manage.py> --profiles <ceo>,<workeri>,<slug> --max-deliveries <cap+2> --window 180`
-  - Declanșează un ciclu: rulează `assign-to-<slug>/scripts/delegate.py --reset` apoi cu `--prompt`
-    + `--image` (o imagine de test existentă). Verifică în loguri: copywriter-ul primește poza,
-    rulează vision, scrie copy (limba corectă), mențiune către CEO; CEO reacționează/livrează;
-    fără chatter, fără buclă. Monitorul oprește echipa dacă apar > cap+2 livrări (runaway).
-  - Confirmă rezultatul cu userul:
+
+> ⚠️ **HERMES_HOME la rularea scripturilor:** în producție fiecare gateway rulează cu
+> `HERMES_HOME = profilul lui` (tokenul se ia din `HERMES_HOME/.env`, starea din `HERMES_HOME/cache`).
+> Când rulezi TU `delegate.py`/`deliver.py` al unui worker pentru test, setează
+> `HERMES_HOME=<CEO_PROFILE>` (profilul care deține skill-ul), altfel `delegate.py`-ul ne-patch-uit
+> al artistului dă `ERROR: no TELEGRAM_BOT_TOKEN`. (Patcher-ul de la Pas 6.5 elimină fragilitatea
+> asta pentru artist, dar nuanța rămâne validă pentru orice script de worker.)
+
+- **Pornește monitorul auto-kill (în fundal):**
+  `<venv_python> scripts/monitor.py --python <venv_python> --manage <live_manage.py> --profiles <ceo>,<artist>,<slug> --max-deliveries <cap+2> --window 300`
+
+- **Treapta 1 — test MECANIC (delegare directă):** rulează `assign-to-<slug>/scripts/delegate.py
+  --reset` apoi cu `--prompt` + `--image <o imagine de test existentă>`. În loguri confirmă:
+  copywriter-ul **primește poza ȘI o VEDE** (caută `vision_analyze` / „native vision" / „image(s)
+  attached inline" în logul lui), scrie copy în **limba corectă**, mențiune către CEO; CEO
+  reacționează/livrează; **un singur** răspuns de la copywriter (fără buclă/chatter).
+
+- **Treapta 2 — test AUTONOM (decizia CEO-ului, bug-ul real):** testul mecanic NU validează că CEO-ul
+  *decide singur* să delege copy. Pentru asta, **cere utilizatorului să trimită o cerere reală** de
+  reclamă în General, apoi monitorizează tot lanțul:
 
 > APELEAZĂ AskUserQuestion (exemplu literal):
-> Întrebarea 1 — „Cum a mers testul de copy?"
->   opțiuni: ["Merge — copy livrat în General"], ["Nu răspunde"], ["Buclă / chatter / limbă greșită"]
+> Întrebarea 1 — „Trimite în General o cerere de tip reclamă (ex. „fă-mi o reclamă 1:1 pentru un curs de fotografie, cu slogan și CTA"). Ai trimis?"
+>   opțiuni: ["Da, am trimis"], ["Sari peste testul autonom"]
 
-  - DACĂ „Merge": declară succesul. ALTFEL: inspectează loguri + monitor și remediază (gating/handoff/token/vision).
-  - La final, `--reset` la contoare și `fresh` pentru start curat.
+  Dacă „Da", verifică în loguri **lanțul complet**: CEO → `assign-to-<artist>` **cu `--note
+  NEEDS_COPY`** (confirmă cu `--show-brief` că nota e în brief, iar logul artistului NU conține
+  `NEEDS_COPY`) → imagine → review → `assign-to-<slug>` **cu `--image`** → Ryan VEDE poza + scrie
+  copy (limba corectă) → CEO livrează imagine **cu copy în caption** în General → STOP. Fără buclă;
+  monitorul nu a oprit echipa (≤ cap+2 livrări).
+
+  Confirmă rezultatul cu userul:
+
+> APELEAZĂ AskUserQuestion (exemplu literal):
+> Întrebarea 1 — „Cum a mers? (Reclama a venit cu imagine ȘI copy?)"
+>   opțiuni: ["Merge — imagine+copy în General"], ["A livrat doar imaginea (fără copy)"], ["Nu răspunde / buclă / limbă greșită"]
+
+  - „Merge" → succes. „Doar imaginea" → SOUL-ul nu a prins decizia: verifică PASUL 0 + `--note` +
+    livrarea condiționată (`--show-brief` trebuie să arate `NEEDS_COPY`). Restul → inspectează loguri
+    + monitor (gating/handoff/token/vision).
+  - La final: `--reset` la contoarele ambilor workeri, șterge `<CEO_PROFILE>/cache/.delivered_image.json`
+    și `fresh` pentru start curat.
 
 ## Reguli finale
 - Copywriter nou = ÎNTOTDEAUNA gated în topicul „Copywriting". Doar CEO-ul e liber.
 - Delegare DOAR prin `assign-to-<slug>` (mențiune+thread hardcodate + cap). Secretele doar în `.env` (`chmod 600`), niciodată în doc/git.
+- **Necesită un artist** (worker de imagini): lanțul automat imagine→copy depinde de el. Patch-ul
+  `patch_artist_delegate.py` (idempotent) adaugă `--note` + citire robustă a tokenului în
+  `delegate.py` al artistului — NU rescrie alt comportament al artistului.
+- **Decizia „reclamă = imagine+copy" + livrarea condiționată trăiesc în SOUL-ul CEO-ului** (PASUL 0
+  + `NEEDS_COPY`). NICIODATĂ nu livra imaginea goală când brief-ul are `NEEDS_COPY`.
+- **`--note` se atașează doar la runda 1** a delegării către artist (decizia se ia din start).
 - NU atinge profilul `default`, NU modifica gating-ul celorlalți workeri.
+- Idempotent: re-rularea pe o echipă cu copywriter existent doar re-aplică patch-urile (Pas 0).
 - Acest skill adaugă **un singur** copywriter (rol fix: imagine+brief→copy); doar persona/limba diferă.

@@ -27,7 +27,7 @@ Skill-urile apar apoi namespaced (ex. `armata-wizard:adauga-ceo`). Detalii compl
   | **0** | `instaleaza-hermes` | **Bootstrap (o singură dată).** Instalează Hermes Agent pe calculator (Mac/Linux/Windows) + configurează cheia Gemini, non-interactiv. Rulează ÎNAINTE de `adauga-ceo` pe o mașină nouă. |
   | **1** | `adauga-ceo` | **Fundația.** Creează CEO-ul liber (default Michael) + te ghidează să faci grupul Telegram cu Topicuri; stabilește `team.json`-ul canonic. |
   | **2** | `adauga-artist` | Worker de imagini (default Pam, Gemini Nano Banana Pro), gated în topicul lui. **Vine ÎNAINTEA copywriter-ului** (e sursa imaginii). |
-  | **3** | `adauga-copywriter` | Worker de copy (default Ryan): primește imaginea de la artist + brief → scrie textul de reclamă. |
+  | **3** | `adauga-copywriter` | Worker de copy (default Ryan): primește imaginea de la artist + brief → scrie textul de reclamă. **Necesită un artist**; wire-uiește lanțul AUTONOM — CEO-ul recunoaște singur o cerere de reclamă (poster/ad/anunț) ca „imagine+copy", deleagă copy-ul și livrează imagine+copy în General. |
   | **4** | `adauga-web-developer` | Worker HTML (default Dwight): primește 2-3 imagini + copy-ul paginii → scrie un `index.html` self-contained. CEO-ul împachetează `index.html` + imaginile într-un `.zip` livrat în General. **Ultimul** (depinde de imagini+copy). |
 
   **În afara workflow-ului — libertate maximă:**
