@@ -1,0 +1,6 @@
+{
+  "profiles": ["michael", "pam", "ryan", "dwight", "toby", "erin"],
+  "watchers": [
+    "/home/silviu/.hermes/profiles/erin/skills/email-studio/scripts/inbox_watcher.py"
+  ]
+}

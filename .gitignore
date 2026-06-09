@@ -1,0 +1,31 @@
+# --- Secrets & runtime (NEVER commit) ---
+# Live runtime env (the template *.env files under skills/*/templates/ are placeholders and ARE tracked)
+.env
+.env.local
+*.key
+*.pem
+
+# Hermes runtime state generated at install/run time
+**/profiles/
+**/sessions/
+*.session
+*.pid
+*.log
+
+# Runtime handoff state (templates named handoff.json stay; runtime copies are handoff_*.json)
+handoff_*.json
+
+# --- Python ---
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# --- Node ---
+node_modules/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp

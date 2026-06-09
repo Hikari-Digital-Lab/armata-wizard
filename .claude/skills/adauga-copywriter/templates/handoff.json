@@ -1,0 +1,6 @@
+{
+  "worker_mention": "@<COPYWRITER_USERNAME>",
+  "thread_id": "<TOPIC_ID>",
+  "max_rounds": <MAX_ROUNDS>,
+  "reset_gap": 600
+}
