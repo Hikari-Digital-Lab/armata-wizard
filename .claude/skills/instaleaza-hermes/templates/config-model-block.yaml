@@ -1,0 +1,11 @@
+# Blocul `model:` din config.yaml (Linux/mac: ~/.hermes/config.yaml;
+# Windows: %LOCALAPPDATA%\hermes\config.yaml). Setare recomandată via CLI:
+#   hermes config set model.provider gemini
+#   hermes config set model.default gemini-3.5-flash
+# (CLI-ul nu strică restul cheilor din config.yaml.)
+#
+# Echivalentul scris direct în YAML:
+model:
+  default: gemini-3.5-flash   # creierul (ieftin/multimodal); `model.model` e cheie echivalentă
+  provider: gemini            # provider id literal "gemini" = Google AI Studio direct
+  # base_url e opțional pt gemini → default https://generativelanguage.googleapis.com/v1beta/openai

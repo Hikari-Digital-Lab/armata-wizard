@@ -12,6 +12,7 @@ Documentație + skill-uri Claude Code pentru a construi agenți AI care colabore
   **Workflow standard (recomandat) — fundație, apoi membri în ordine:**
   | Pas | Skill | Rol |
   |---|---|---|
+  | **0** | `instaleaza-hermes` | **Bootstrap (o singură dată).** Instalează Hermes Agent pe calculator (Mac/Linux/Windows) + configurează cheia Gemini, non-interactiv. Rulează ÎNAINTE de `adauga-ceo` pe o mașină nouă. |
   | **1** | `adauga-ceo` | **Fundația.** Creează CEO-ul liber (default Michael) + te ghidează să faci grupul Telegram cu Topicuri; stabilește `team.json`-ul canonic. |
   | **2** | `adauga-artist` | Worker de imagini (default Pam, Gemini Nano Banana Pro), gated în topicul lui. **Vine ÎNAINTEA copywriter-ului** (e sursa imaginii). |
   | **3** | `adauga-copywriter` | Worker de copy (default Ryan): primește imaginea de la artist + brief → scrie textul de reclamă. |
@@ -34,6 +35,9 @@ sub-skill-uri), ca să nu depindă de fișiere din afara lui.
 ## Flux de creare a echipei
 
 ```
+   PAS 0 (bootstrap, o singură dată pe o mașină nouă):
+   • instaleaza-hermes  → instalează Hermes (Mac/Linux/Win) + configurează cheia Gemini, non-interactiv
+
    WORKFLOW STANDARD (în ordine):
 
    ┌─────────────────────────┐   ┌─────────────────────────┐   ┌──────────────────────────┐   ┌──────────────────────────┐
@@ -56,6 +60,10 @@ sub-skill-uri), ca să nu depindă de fișiere din afara lui.
 ```
 
 **Ordine & dependențe:**
+0. **`instaleaza-hermes` e Pasul 0 (bootstrap)** — pe o mașină nouă, instalează Hermes Agent
+   (Mac/Linux/Windows, prin installer-ul oficial) + configurează cheia Gemini, **non-interactiv**.
+   Rulează **o singură dată**, înaintea lui `adauga-ceo`. Pe o mașină unde Hermes există deja, oferă
+   doar upgrade + (re)configurare. Tratează gotcha-ul Claude Desktop (PATH moștenit).
 1. **`adauga-ceo` întâi** — creează singurul bot liber + `team.json`-ul canonic pe care workerii îl
    actualizează. Fără el (sau fără `echipa-boti-hermes` / `reproducere-agenti-office`), workerii
    n-au CEO la care să raporteze.
@@ -99,5 +107,6 @@ primești o variantă mai detaliată. Ce se poate obține automat (id-uri de gru
 Claude singur — `RUNBOOK.md` rămâne doar referință opțională.
 
 ## Prerechizite
-Hermes Agent instalat; `google-genai` + `psutil` în venv-ul Hermes; cheie Google AI Studio;
-cont Telegram. Detalii în RUNBOOK §2.
+Hermes Agent instalat + configurat cu o cheie Google AI Studio (Gemini) — pe o mașină nouă, fă asta
+cu skill-ul **`instaleaza-hermes`** (Pasul 0, automat, pe orice OS). Apoi: `google-genai` + `psutil`
+în venv-ul Hermes (le pune `adauga-ceo`); cont Telegram. Detalii în RUNBOOK §2.

@@ -28,6 +28,13 @@ jos ori de câte ori lucrezi aici sau rulezi/editezi skill-urile.
 - `TELEGRAM_EXCLUSIVE_BOT_MENTIONS=true` peste tot.
 
 ## Workflow de creare a agenților (ordine & dependențe)
+- **`instaleaza-hermes` e Pasul 0 (bootstrap, ÎN AFARA lanțului de agenți)** — pe o mașină nouă
+  instalează Hermes Agent (Mac/Linux/Windows, prin installer-ul oficial) + configurează cheia Gemini
+  **non-interactiv** (`hermes setup` e TUI și nu merge în Claude Code → folosește `hermes config set`
+  + scriere `.env`; dovadă cu `hermes -z`). Tratează gotcha-ul Claude Desktop (PATH moștenit → binar
+  invizibil în sesiune → cale absolută). Idempotent (oferă upgrade), backup config înainte de
+  modificări. Rulează **înainte** de `adauga-ceo`; NU instalează deps office (google-genai/psutil) și
+  NU atinge Telegram — alea rămân pentru `adauga-ceo`.
 - **Ordinea e obligatorie:** `adauga-ceo` e **PRIMUL** — pune fundația (CEO-ul liber + grupul
   Telegram cu Topicuri + `team.json`-ul **canonic** în `adauga-ceo/scripts/`). Abia apoi se adaugă
   workeri.
