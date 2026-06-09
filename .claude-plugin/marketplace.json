@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "armata-wizard",
+  "owner": {
+    "name": "silviu",
+    "email": "psilviu94@gmail.com"
+  },
+  "description": "Marketplace cu plugin-uri pentru construirea de echipe de agenți AI pe Telegram (stil The Office) cu Hermes Agent + Google Gemini.",
+  "plugins": [
+    {
+      "name": "armata-wizard",
+      "source": "./plugins/armata-wizard",
+      "description": "Construiește echipe de agenți AI care colaborează pe Telegram în stil The Office, pe Hermes Agent + Google Gemini. Skill-uri: instaleaza-hermes (bootstrap), adauga-ceo (fundația), adauga-artist, adauga-copywriter, adauga-web-developer, adauga-membru-echipa, adauga-avocat, adauga-secretara.",
+      "version": "1.0.0",
+      "author": {
+        "name": "silviu",
+        "email": "psilviu94@gmail.com"
+      },
+      "license": "Apache-2.0",
+      "category": "productivity",
+      "keywords": [
+        "telegram",
+        "agents",
+        "hermes",
+        "gemini",
+        "the-office",
+        "onboarding"
+      ]
+    }
+  ]
+}

@@ -36,7 +36,7 @@ jos ori de câte ori lucrezi aici sau rulezi/editezi skill-urile.
   modificări. Rulează **înainte** de `adauga-ceo`; NU instalează deps office (google-genai/psutil) și
   NU atinge Telegram — alea rămân pentru `adauga-ceo`.
 - **Ordinea e obligatorie:** `adauga-ceo` e **PRIMUL** — pune fundația (CEO-ul liber + grupul
-  Telegram cu Topicuri + `team.json`-ul **canonic** în `adauga-ceo/scripts/`). Abia apoi se adaugă
+  Telegram cu Topicuri + `team.json`-ul **canonic LIVE** în `~/.hermes/team.json`). Abia apoi se adaugă
   workeri.
 - **Workflow standard, în ordine:** `adauga-ceo` (1) → **`adauga-artist` (2) → `adauga-copywriter`
   (3) → `adauga-web-developer` (4)**. Artistul vine **ÎNAINTEA** copywriter-ului fiindcă e sursa
@@ -68,13 +68,22 @@ jos ori de câte ori lucrezi aici sau rulezi/editezi skill-urile.
   raportează CEO-ului **cu UID**, care relayează în General. ⚠️ Folosește variabile **`MAILBOX_*`** (nu
   `EMAIL_*`) ca să NU pornească canalul email NATIV Hermes (altfel fură inbox-ul + auto-răspunde fără
   aprobare). NU e în lanțul artist→copywriter→web-developer.
-- **`team.json` canonic:** skill-urile de workeri caută `team.json` întâi în `adauga-ceo/scripts/`,
-  apoi `reproducere-agenti-office/scripts/`, `echipa-boti-hermes`, `adauga-membru-echipa/scripts/`.
-  Pe ACELA îl actualizezi + repornești (nu pe copia proprie de fallback).
+- **`team.json` canonic (LIVE):** locația canonică e **`~/.hermes/team.json`** (`HERMES_HOME`) — ținută
+  acolo special ca să rămână editabilă și când skill-urile rulează dintr-un cache de plugin read-only.
+  `adauga-ceo` o seed-uiește; toate `manage.py` o citesc de acolo (helper `_team()`), cu fallback la
+  copia seed `scripts/team.json` de lângă script, apoi env `HERMES_TEAM_PROFILES`. Pe `~/.hermes/team.json`
+  îl actualizezi (`profiles`/`watchers`) + repornești (nu pe copia seed). Asta înlocuiește vechea
+  căutare cross-skill (`adauga-ceo/scripts/` → … → `adauga-membru-echipa/scripts/`).
 - **REGULĂ DE MENTENANȚĂ:** când creezi/modifici un skill de creare de agenți, **actualizează
   imediat workflow-ul de dependențe** — diagrama + ordinea din `README.md` (secțiunea „Flux de
   creare a echipei") ȘI lista de mai sus din `CLAUDE.md`, plus ordinea de căutare a `team.json`-ului
   în skill-urile afectate. Workflow-ul de dependențe nu se lasă niciodată în urma skill-urilor.
+- **PLUGIN/MARKETPLACE:** repo-ul e și un marketplace Claude Code (`.claude-plugin/marketplace.json`)
+  cu plugin-ul `armata-wizard` (`plugins/armata-wizard/`). Skill-urile incluse sunt **symlink-uri**
+  către `.claude/skills/` (sursa de adevăr — aici editezi). Dacă adaugi un skill nou în setul curat,
+  creează și symlink-ul `plugins/armata-wizard/skills/<nume> -> ../../../.claude/skills/<nume>` și
+  bump `version` în `plugins/armata-wizard/.claude-plugin/plugin.json` + `marketplace.json`. Cele două
+  buildere alternative (`echipa-boti-hermes`, `reproducere-agenti-office`) sunt intenționat EXCLUSE din plugin.
 
 ## Handoff determinist (CEO → worker)
 - CEO-ul deleagă **DOAR** prin skill-ul `assign-to-<worker>` (`delegate.py`), care pune

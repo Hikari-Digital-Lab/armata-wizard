@@ -27,7 +27,7 @@ Dacă alege „Am nevoie de ajutor", afișează o variantă mai detaliată și r
 Valorile pe care le poți obține singur (topic id) le iei TU (rulezi `curl`), nu le ceri userului.
 
 ## Pas 1 — Inspectează setup-ul existent
-- Citește `team.json` (lângă `manage.py`) → lista de profiluri.
+- Citește **team.json LIVE** = `~/.hermes/team.json` (HERMES_HOME; fallback: copia seed de lângă `manage.py`) → lista de profiluri.
 - Identifică **CEO-ul** = profilul cu `TELEGRAM_REQUIRE_MENTION=false` în `.env`
   (`grep -l 'TELEGRAM_REQUIRE_MENTION=false' ~/.hermes/profiles/*/.env`). Confirmă cu userul prin **AskUserQuestion**.
 - Citește din `.env`-ul CEO-ului: `TELEGRAM_GROUP_ALLOWED_CHATS` (group id) și
@@ -127,7 +127,7 @@ task/feedback, taci la aprobări"), în limba echipei.
   Păstrează regula LOOP GUARD. Astfel CEO-ul „știe" de noul membru și-l poate folosi.
 
 ## Pas 8 — Înregistrează + repornește + verifică
-- Adaugă `<slug>` în `team.json`.
+- Adaugă `<slug>` în **team.json LIVE** (`~/.hermes/team.json`).
 - `manage.py restart` (sau `fresh` dacă vrei start curat). Confirmă noul bot „✓ telegram connected".
 - Test (afișează instrucțiunea, apoi confirmă prin AUQ; ține monitor auto-kill ca plasă):
 

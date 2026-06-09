@@ -3,7 +3,7 @@ name: adauga-secretara
 description: "Adaugă un agent SECRETARĂ (worker care trimite și primește email pe mailbox-ul biroului — Gmail sau Yahoo — la cererea CEO-ului) peste o echipă Hermes existentă. Default Erin Hannon (The Office) cu fișiere gata-făcute; opțional persona custom. Topologie hub: secretara e gated, raportează DOAR la CEO, fără buclă. Standalone (escape-hatch ca adauga-avocat): NU e în lanțul artist→copywriter→web-developer; se declanșează când CEO-ul e rugat să scrie/citească email. Outbound: CEO compune → secretara trimite (send_email.py); răspunsurile merg pe ACELAȘI thread (reply_email.py, Re:+In-Reply-To). Inbound: watcher auto-poll → secretara FILTREAZĂ → raportează CEO-ului cu UID. Încorporează toate lecțiile: MAILBOX_* (dezactivează canalul email nativ Hermes), directivă-în-trezire, aprobare-o-dată, watcher în manage.py, capcanele App Password."
 version: 1.0.0
 author: silviu
-license: MIT
+license: Apache-2.0
 platforms: [linux, darwin, win32]
 metadata:
   hermes:
@@ -83,10 +83,10 @@ detaliată și re-întreabă cu ACELAȘI apel. Ce poți face singur (topic via A
 ---
 
 ## Pas 1 — Inspectează echipa existentă
-- Găsește **team.json-ul echipei LIVE** (folosit de gateway-urile care rulează), în ordine: lângă
-  `adauga-ceo/scripts/`, apoi `reproducere-agenti-office/scripts/`, apoi `echipa-boti-hermes`, apoi
-  `adauga-membru-echipa/scripts/`. Reține calea lui + a `manage.py`-ului de lângă el — pe ACELA îl
-  actualizezi și repornești (copia proprie din `scripts/` e fallback).
+- **team.json LIVE** = `~/.hermes/team.json` (HERMES_HOME) — manifestul **canonic** al echipei,
+  ținut în HERMES_HOME ca să rămână editabil și când skill-ul rulează dintr-un cache de plugin
+  read-only. `manage.py` îl citește de acolo (fallback: seed-ul bundled de lângă `scripts/`, apoi
+  env `HERMES_TEAM_PROFILES`). Pe ACELA îl actualizezi (`profiles`/`watchers`) și repornești echipa.
 - Identifică **CEO-ul** = profilul cu `TELEGRAM_REQUIRE_MENTION=false`:
   `grep -l 'TELEGRAM_REQUIRE_MENTION=false' ~/.hermes/profiles/*/.env`. **Confirmă prin AskUserQuestion.**
 - Din `.env`-ul CEO-ului citește `TELEGRAM_GROUP_ALLOWED_CHATS` (`<GROUP_ID>`), `TELEGRAM_ALLOWED_TOPICS`

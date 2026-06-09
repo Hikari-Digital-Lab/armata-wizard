@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "armata-wizard",
+  "displayName": "Armata Wizard — Agenți Office",
+  "version": "1.0.0",
+  "description": "Construiește echipe de agenți AI care colaborează pe Telegram în stil The Office, pe Hermes Agent + Google Gemini. Include skill-urile de bootstrap, CEO și workeri (artist, copywriter, web developer, membru custom, avocat, secretară), cu anti-buclă, handoff determinist și anti-chatter integrate.",
+  "author": {
+    "name": "silviu",
+    "email": "psilviu94@gmail.com"
+  },
+  "homepage": "https://github.com/Hikari-Digital-Lab/armata-wizard",
+  "repository": "https://github.com/Hikari-Digital-Lab/armata-wizard",
+  "license": "Apache-2.0",
+  "keywords": [
+    "telegram",
+    "agents",
+    "hermes",
+    "gemini",
+    "the-office",
+    "onboarding"
+  ]
+}

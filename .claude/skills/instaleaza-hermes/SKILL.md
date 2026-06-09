@@ -3,7 +3,7 @@ name: instaleaza-hermes
 description: "PASUL 0 (bootstrap) înainte de orice echipă de boți: instalează Hermes Agent (NousResearch) de la zero pe calculatorul utilizatorului — Mac, Linux sau Windows — și îl configurează cu o cheie Google AI Studio (Gemini), pentru un utilizator FINAL non-tehnic. Detectează OS-ul și rulează installer-ul oficial; tratează gotcha-ul Claude Desktop (PATH moștenit → binar invizibil în sesiune). Idempotent (oferă upgrade dacă Hermes există), backup la config înainte de modificări, configurare NON-interactivă prin scriere de fișiere (fiindcă `hermes setup` e TUI și nu merge în Claude Code), dovadă reală prin `hermes -z` (one-shot). Se încheie cu ritualul AI-Wizard. Rulează ÎNAINTE de adauga-ceo."
 version: 1.0.0
 author: silviu
-license: MIT
+license: Apache-2.0
 platforms: [linux, darwin, win32]
 metadata:
   hermes:

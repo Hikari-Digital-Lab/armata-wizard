@@ -106,7 +106,7 @@ Generează `SOUL.md` pentru fiecare profil urmând STRUCTURA dovedită (vezi
 Toate în limba aleasă; prompturile de imagine rămân engleză.
 
 ## Pas 10 — Launcher + pornire + verificare
-- `team.json` lângă `manage.py`: `{"profiles": ["<ceo>", "<worker1>", ...]}`.
+- **team.json LIVE** = `~/.hermes/team.json` (seed și lângă `manage.py`): `{"profiles": ["<ceo>", "<worker1>", ...]}`.
 - `<venv-python> manage.py start` → toți RUNNING + „✓ telegram connected".
 - Test controlat per worker (declanșează un ciclu prin skill-ul de delegare) cu monitor
   auto-kill (oprește dacă > cap+1 livrări într-un ciclu). Confirmă: fără chatter, limba corectă,

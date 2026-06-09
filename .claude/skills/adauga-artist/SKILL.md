@@ -3,7 +3,7 @@ name: adauga-artist
 description: "Adaugă un agent ARTIST (worker care generează imagini cu Google Gemini Nano Banana Pro) peste o echipă Hermes existentă. Default Pam Beesly (The Office) cu fișiere gata-făcute; opțional persona custom (alt nume/caracter). Topologie hub: artistul e gated, raportează DOAR la CEO, fără buclă. Flux: CEO → assign-to-<slug> cu prompt englez → artistul generează imaginea → CEO o livrează în General (și, dacă există un copywriter, poate înlănțui imagine→copy)."
 version: 1.0.0
 author: silviu
-license: MIT
+license: Apache-2.0
 platforms: [linux, darwin, win32]
 metadata:
   hermes:
@@ -45,10 +45,10 @@ Valorile pe care le poți obține singur (topic id, group id) le iei TU (rulezi 
 ---
 
 ## Pas 1 — Inspectează echipa existentă
-- Găsește **team.json-ul echipei LIVE** (folosit de gateway-urile care rulează), în ordine: lângă
-  `adauga-ceo/scripts/` (fundația — sursa canonică), apoi `reproducere-agenti-office/scripts/`, apoi `echipa-boti-hermes`, apoi
-  `adauga-membru-echipa/scripts/`. Reține calea lui + a `manage.py`-ului de lângă el — pe ACELA îl
-  actualizezi și repornești (copia proprie din `scripts/manage.py` e doar fallback).
+- **team.json LIVE** = `~/.hermes/team.json` (HERMES_HOME) — manifestul **canonic** al echipei,
+  ținut în HERMES_HOME ca să rămână editabil și când skill-ul rulează dintr-un cache de plugin
+  read-only. `manage.py` îl citește de acolo (fallback: seed-ul bundled de lângă `scripts/`, apoi
+  env `HERMES_TEAM_PROFILES`). Pe ACELA îl actualizezi (`profiles`/`watchers`) și repornești echipa.
 - Identifică **CEO-ul** = profilul cu `TELEGRAM_REQUIRE_MENTION=false`:
   `grep -l 'TELEGRAM_REQUIRE_MENTION=false' ~/.hermes/profiles/*/.env`. **Confirmă prin AskUserQuestion.**
 - Din `.env`-ul CEO-ului citește `TELEGRAM_GROUP_ALLOWED_CHATS` (group id) și

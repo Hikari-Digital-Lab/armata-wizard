@@ -3,6 +3,18 @@
 Documentație + skill-uri Claude Code pentru a construi agenți AI care colaborează pe Telegram
 (stil *The Office*), cu [Hermes Agent](https://github.com/NousResearch/hermes-agent) + Google Gemini.
 
+## Instalare ca plugin
+
+Acest repo e și un **marketplace de plugin-uri Claude Code**. Poți instala skill-urile (setul curat
+de 8) ca plugin, fără să clonezi manual:
+
+```
+/plugin marketplace add Hikari-Digital-Lab/armata-wizard
+/plugin install armata-wizard@armata-wizard
+```
+
+Skill-urile apar apoi namespaced (ex. `armata-wizard:adauga-ceo`). Detalii complete: **[MARKETPLACE.md](MARKETPLACE.md)**.
+
 ## Conținut
 - **[RUNBOOK.md](RUNBOOK.md)** — ghidul complet: arhitectură, pașii tăi din Telegram (cu
   screenshot-uri), ce face Claude Code, tabelul cu TOATE setările care au mers, costuri,

@@ -3,7 +3,7 @@ name: adauga-ceo
 description: "PRIMUL skill când construiești o echipă de boți Telegram pe Hermes — pune fundația. Creează un agent CEO/manager STAND-ALONE (default Michael Scott din The Office; opțional persona custom), botul lui liber care răspunde pe toate topicurile grupului + DM. Te ghidează să-ți creezi un GRUP Telegram cu Topicuri (forum) și botul în BotFather. Stabilește team.json-ul canonic + manage.py pe care skill-urile de workeri (adauga-artist / adauga-copywriter) le folosesc apoi. CEO = singurul bot liber (require_mention=false) → baza anti-buclei."
 version: 1.0.0
 author: silviu
-license: MIT
+license: Apache-2.0
 platforms: [linux, darwin, win32]
 metadata:
   hermes:
@@ -122,9 +122,11 @@ Topicul **General** are id **1**. NU afișa comanda userului. (Detalii extra op�
    (SOUL-ul e STANDALONE, fără referințe la workeri — skill-urile de workeri îl extind ulterior.)
 
 ## Pas 5 — team.json canonic + scripturi
-- Creează **`<acest_skill>/scripts/team.json`** = `{"profiles": ["<slug>"]}` — acesta devine
-  manifestul **canonic** al echipei live. `manage.py` de lângă el îl citește.
-- (Skill-urile `adauga-artist` / `adauga-copywriter` caută acest team.json — vezi Pas 1-ul lor.)
+- Creează **`~/.hermes/team.json`** (HERMES_HOME) = `{"profiles": ["<slug>"]}` — acesta devine
+  manifestul **canonic** al echipei live, ținut în HERMES_HOME ca să rămână editabil și când
+  skill-urile rulează dintr-un cache de plugin read-only. `manage.py` îl citește de acolo (fallback:
+  seed-ul bundled `<acest_skill>/scripts/team.json`). Poți lăsa și o copie seed în `scripts/team.json`.
+- (Skill-urile `adauga-artist` / `adauga-copywriter` / etc. citesc acest team.json LIVE — vezi Pas 1-ul lor.)
 
 ## Pas 6 — Pornește + verifică
 - `<venv_python> <acest_skill>/scripts/manage.py fresh` (sau `start`). Confirmă „✓ telegram

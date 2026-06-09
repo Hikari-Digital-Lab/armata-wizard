@@ -3,7 +3,7 @@ name: adauga-avocat
 description: "Adaugă un agent AVOCAT (worker care verifică contracte: cercetează legislația pe internet cu web_search, pe un flux de 3 runde CEO↔avocat, apoi livrează DETERMINIST un verdict Go/No-Go scurt + un PDF cu analiza aprofundată) peste o echipă Hermes existentă. Default Toby Flenderson (The Office) cu fișiere gata-făcute; opțional persona custom. Topologie hub: avocatul e gated, raportează DOAR la CEO, fără buclă. Standalone (escape-hatch ca adauga-membru-echipa), declanșat când CEO-ul e rugat să verifice un contract. Încorporează toate lecțiile: backend web_search (ddgs), cap de căutări, livrare prin script determinist cu lock anti-duplicat, PDF cu analiza completă (salvată de avocat), reguli anti-duplicat pe sesiunile per-topic ale CEO-ului."
 version: 1.0.0
 author: silviu
-license: MIT
+license: Apache-2.0
 platforms: [linux, darwin, win32]
 metadata:
   hermes:
@@ -66,10 +66,10 @@ Ce poți face singur (topic via API, `getUpdates`, `pip install ddgs`) faci TU, 
 ---
 
 ## Pas 1 — Inspectează echipa existentă
-- Găsește **team.json-ul echipei LIVE** (folosit de gateway-urile care rulează), în ordine: lângă
-  `adauga-ceo/scripts/` (fundația), apoi `reproducere-agenti-office/scripts/`, apoi `echipa-boti-hermes`,
-  apoi `adauga-membru-echipa/scripts/`. Reține calea lui + a `manage.py`-ului de lângă el — pe ACELA îl
-  actualizezi și repornești (copia proprie din `scripts/manage.py` e doar fallback).
+- **team.json LIVE** = `~/.hermes/team.json` (HERMES_HOME) — manifestul **canonic** al echipei,
+  ținut în HERMES_HOME ca să rămână editabil și când skill-ul rulează dintr-un cache de plugin
+  read-only. `manage.py` îl citește de acolo (fallback: seed-ul bundled de lângă `scripts/`, apoi
+  env `HERMES_TEAM_PROFILES`). Pe ACELA îl actualizezi (`profiles`/`watchers`) și repornești echipa.
 - Identifică **CEO-ul** = profilul cu `TELEGRAM_REQUIRE_MENTION=false`:
   `grep -l 'TELEGRAM_REQUIRE_MENTION=false' ~/.hermes/profiles/*/.env`. **Confirmă prin AskUserQuestion.**
 - Din `.env`-ul CEO-ului citește `TELEGRAM_GROUP_ALLOWED_CHATS` (`<GROUP_ID>`) și

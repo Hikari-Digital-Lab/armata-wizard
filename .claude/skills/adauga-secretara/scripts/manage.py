@@ -27,19 +27,28 @@ except ImportError:
     sys.exit("ERROR: psutil not installed. Run:  <hermes-venv-python> -m pip install psutil")
 
 HERE = pathlib.Path(__file__).resolve().parent
-HERMES_DIR = pathlib.Path.home() / ".hermes"
+HERMES_DIR = pathlib.Path(os.environ.get("HERMES_HOME") or pathlib.Path.home() / ".hermes")
 LOG_DIR = HERMES_DIR / "office-logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
+# team.json LIVE (canonic) sta in HERMES_HOME (~/.hermes/team.json) ca sa ramana editabil
+# cand skill-ul ruleaza dintr-un cache de plugin read-only. Fallback: seed-ul bundled de
+# langa acest script, apoi env HERMES_TEAM_PROFILES, apoi default.
+LIVE_TEAM = HERMES_DIR / "team.json"
+
+
+def _team():
+    for f in (LIVE_TEAM, HERE / "team.json"):
+        try:
+            return json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+    return {}
 
 
 def profiles():
-    f = HERE / "team.json"
-    try:
-        p = json.loads(f.read_text(encoding="utf-8")).get("profiles")
-        if p:
-            return list(p)
-    except Exception:
-        pass
+    p = _team().get("profiles")
+    if p:
+        return list(p)
     env = os.environ.get("HERMES_TEAM_PROFILES")
     if env:
         return [x.strip() for x in env.split(",") if x.strip()]
@@ -51,13 +60,9 @@ def watchers():
 
     These are plain Python loops (e.g. an inbox poller), NOT hermes gateways. They start
     and stop with the team. Backward compatible: no "watchers" key => none."""
-    f = HERE / "team.json"
-    try:
-        w = json.loads(f.read_text(encoding="utf-8")).get("watchers")
-        if w:
-            return [str(x) for x in w]
-    except Exception:
-        pass
+    w = _team().get("watchers")
+    if w:
+        return [str(x) for x in w]
     return []
 
 

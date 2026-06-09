@@ -3,7 +3,7 @@ name: adauga-copywriter
 description: "Adaugă un agent COPYWRITER (worker text care primește imagine+brief și scrie textul de reclamă) peste o echipă Hermes existentă. Default Ryan Howard (The Office) cu fișiere gata-făcute; opțional persona custom (alt nume/caracter). Topologie hub: copywriter-ul e gated, raportează DOAR la CEO, fără buclă. Flux: CEO → worker imagini → copywriter (imagine+brief) → CEO livrează imagine+copy."
 version: 1.0.0
 author: silviu
-license: MIT
+license: Apache-2.0
 platforms: [linux, darwin, win32]
 metadata:
   hermes:
@@ -45,10 +45,10 @@ Valorile pe care le poți obține singur (topic id, group id) le iei TU (rulezi 
 ---
 
 ## Pas 1 — Inspectează echipa existentă
-- Găsește **team.json-ul echipei LIVE** (cel folosit de gateway-urile care rulează). Caută-l, în
-  ordine: `adauga-ceo/scripts/` (fundația — sursa canonică), apoi `reproducere-agenti-office/scripts/`, apoi `echipa-boti-hermes`,
-  apoi `adauga-membru-echipa/scripts/`. Reține calea lui + a `manage.py`-ului de lângă el — pe
-  ACELA îl vei actualiza și reporni (copia proprie din `scripts/manage.py` e doar fallback).
+- **team.json LIVE** = `~/.hermes/team.json` (HERMES_HOME) — manifestul **canonic** al echipei,
+  ținut în HERMES_HOME ca să rămână editabil și când skill-ul rulează dintr-un cache de plugin
+  read-only. `manage.py` îl citește de acolo (fallback: seed-ul bundled de lângă `scripts/`, apoi
+  env `HERMES_TEAM_PROFILES`). Pe ACELA îl actualizezi (`profiles`/`watchers`) și repornești echipa.
 - Identifică **CEO-ul** = profilul cu `TELEGRAM_REQUIRE_MENTION=false`:
   `grep -l 'TELEGRAM_REQUIRE_MENTION=false' ~/.hermes/profiles/*/.env`. **Confirmă prin AskUserQuestion.**
 - Din `.env`-ul CEO-ului citește: `TELEGRAM_GROUP_ALLOWED_CHATS` (group id) și

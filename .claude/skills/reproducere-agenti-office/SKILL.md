@@ -132,7 +132,7 @@ Scrie `~/.hermes/profiles/michael/SOUL.md` și `pam/SOUL.md` din `templates/` (v
 ## Pas 11 — Launcher + pornire
 ```bash
 cp scripts/manage.py ~/.hermes/bin/manage.py   # sau rulează direct din proiect
-# team.json lângă manage.py: {"profiles":["michael","pam"]}
+# team.json LIVE: ~/.hermes/team.json (seed și lângă manage.py): {"profiles":["michael","pam"]}
 <venv-python> <cale>/manage.py start
 <venv-python> <cale>/manage.py status      # ambii RUNNING + în loguri "✓ telegram connected"
 ```
