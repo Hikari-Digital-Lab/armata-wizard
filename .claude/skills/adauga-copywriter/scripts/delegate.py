@@ -32,10 +32,18 @@ import mimetypes
 import os
 import pathlib
 import re
+import sys
 import time
 import urllib.parse
 import urllib.request
 import uuid
+
+# Make Romanian (diacritics) output safe on any console, incl. Windows cp1252.
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 HERE = pathlib.Path(__file__).resolve().parent
 SKILL_DIR = HERE.parent
@@ -87,7 +95,7 @@ def _load_state(p):
     try:
         return json.loads(p.read_text(encoding="utf-8"))
     except Exception:
-        return {"round": 0, "ts": 0}
+        return {"round": 0, "ts": 0, "brief": ""}
 
 
 def _post_text(token, payload):
@@ -128,6 +136,8 @@ def main():
     ap.add_argument("--prompt")
     ap.add_argument("--image", help="local path to the image to send the copywriter (round 1)")
     ap.add_argument("--reset", action="store_true")
+    ap.add_argument("--show-brief", action="store_true",
+                    help="print the stored ROUND 1 brief/criteria for the current task")
     ap.add_argument("--worker", default=cfg["worker_mention"])
     ap.add_argument("--thread", default=str(cfg["thread_id"]))
     ap.add_argument("--max-rounds", type=int, default=int(cfg["max_rounds"]))
@@ -141,8 +151,16 @@ def main():
     state_file = _state_path(worker)
 
     if a.reset:
-        state_file.write_text(json.dumps({"round": 0, "ts": time.time()}))
+        state_file.write_text(json.dumps({"round": 0, "ts": time.time(), "brief": ""}))
         print(f"RESET: round counter for {worker} cleared. Next delegation will be ROUND 1.")
+        return
+
+    if a.show_brief:
+        brief = (_load_state(state_file) or {}).get("brief", "")
+        if brief:
+            print(f"CURRENT_BRIEF (criteriile pe care le-ai trimis workerului):\n{brief}")
+        else:
+            print("NO_BRIEF: niciun brief stocat (probabil n-ai delegat încă pentru acest task).")
         return
 
     if not a.prompt:
@@ -158,7 +176,7 @@ def main():
     st = _load_state(state_file)
     now = time.time()
     if now - st.get("ts", 0) > a.reset_gap:
-        st = {"round": 0, "ts": now}
+        st = {"round": 0, "ts": now, "brief": ""}
 
     nxt = st.get("round", 0) + 1
     if nxt > a.max_rounds:
@@ -168,6 +186,12 @@ def main():
             "deliver the image + copy to the user in the General topic, and stop."
         )
         return
+
+    # Persist the ROUND 1 brief so the review turn (a SEPARATE topic session with NO General
+    # context) can recall the criteria via --show-brief.
+    brief = st.get("brief", "") or ""
+    if nxt == 1:
+        brief = a.prompt
 
     text = f"{worker} ROUND {nxt}: {a.prompt}"
 
@@ -192,7 +216,7 @@ def main():
         print("ERROR: Telegram rejected the message (check token / chat id / thread / image).")
         return
 
-    state_file.write_text(json.dumps({"round": nxt, "ts": now}))
+    state_file.write_text(json.dumps({"round": nxt, "ts": now, "brief": brief}))
     kind = "with image" if a.image else "feedback only"
     print(f"DELEGATED ROUND {nxt} to {worker} ({kind}). (cap {a.max_rounds}) Now wait for his copy.")
 

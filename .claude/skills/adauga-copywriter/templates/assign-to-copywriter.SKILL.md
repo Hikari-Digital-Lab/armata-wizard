@@ -35,8 +35,28 @@ cap dur. Tu NU scrii `@<COPYWRITER_USERNAME>` în proză.
 - `CAP_REACHED: ...` → NU mai delega; ia cel mai bun copy de până acum, livrează imaginea +
   copy-ul în General și oprește-te.
 
+## Review — recuperează criteriile (sesiunea <TOPIC_NAME> n-are brief-ul din General)
+Topicul **<TOPIC_NAME>** e o conversație SEPARATĂ de General și NU conține brief-ul omului. La
+review, rulează ÎNTÂI ca să-ți reamintești criteriile:
+```bash
+<VENV_PYTHON> <CEO_PROFILE>/skills/assign-to-<SLUG>/scripts/delegate.py --show-brief
+```
+Apoi judecă copy-ul pe criterii (ton, public, mesaj, lungime, CTA). **Fă mereu cel puțin o rundă de
+rafinare** înainte de livrare; cere TU îmbunătățiri prin `--prompt "<feedback>"`, autonom, fără să
+aștepți omul. Oprește-te când e bun sau la `CAP_REACHED`.
+
+## Livrare — imagine + copy în General, DETERMINIST
+Copy-ul e TEXT (îl ai în mesajul copywriter-ului). Imaginea însă NU are calea în sesiunea curentă →
+livreaz-o prin scriptul determinist al ARTISTULUI, punând copy-ul final drept caption:
+```bash
+<VENV_PYTHON> <CEO_PROFILE>/skills/assign-to-<ARTIST_SLUG>/scripts/deliver.py \
+  --caption "<copy-ul final aprobat, în <LANGUAGE>>"
+```
+Asta postează imaginea + copy-ul în **General** (fără thread). NU folosi `MEDIA:` în proză (ești
+declanșat în topicul copywriter-ului → ar ajunge în topicul greșit). După `DELIVERED ...` ai TERMINAT.
+
 ## Task nou
-Contorul se auto-resetează după ~10 min inactivitate. Ca să forțezi un start curat imediat:
+Livrarea resetează singură contoarele; backstop: auto-reset după ~10 min inactivitate. Start curat:
 ```bash
 <VENV_PYTHON> <CEO_PROFILE>/skills/assign-to-<SLUG>/scripts/delegate.py --reset
 ```
@@ -45,6 +65,4 @@ Contorul se auto-resetează după ~10 min inactivitate. Ca să forțezi un start
 - **Risc de ocolire:** ACESTA e singurul mod de delegare. Nu tasta niciodată
   `@<COPYWRITER_USERNAME>` în proza ta — ar ocoli cap-ul și ar risca o buclă.
 - **Imaginea o trimite scriptul.** Nu posta imaginea manual; dă calea ei prin `--image`.
-- **Scurgere de contor între task-uri consecutive:** dacă primești un brief NOU sub 10 min după
-  unul terminat, rulează MANUAL cu `--reset` înainte de prima rundă.
 - **Un singur handoff pe rundă.** După delegare, așteaptă copy-ul înainte de orice.

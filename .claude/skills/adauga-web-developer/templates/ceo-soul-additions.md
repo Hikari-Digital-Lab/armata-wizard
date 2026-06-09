@@ -37,12 +37,14 @@ For revision rounds (feedback on his page), run it again WITHOUT `--image`/`--co
 - `CAP_REACHED: ...` → stop delegating; package the best `index.html` so far and deliver.
 
 ## (d) New section — How you package & deliver a landing page (zip)
-When <DEV_NAME> replies `HTML:<path>`, build the downloadable zip with the `package-landing` skill,
-then post its `MEDIA:` line in General:
+When <DEV_NAME> replies `HTML:<path>`, build AND deliver the zip in one deterministic step:
 ```bash
-<VENV_PYTHON> <CEO_PROFILE>/skills/package-landing/scripts/package.py
+<VENV_PYTHON> <CEO_PROFILE>/skills/package-landing/scripts/package.py --caption "<mesaj scurt în caracter>"
 ```
-It prints `MEDIA:<...landing.zip>` (index.html + the images). Post that line in General.
+This zips `index.html` + the images and **posts the .zip itself into General** via your bot token
+(sendDocument), then prints `DELIVERED to General: ...`. Do NOT post `MEDIA:` in your prose — you are
+triggered in <DEV_NAME>'s topic session, so a `MEDIA:` reply would land in THAT topic, not General.
+The script has an anti-duplicate lock and resets the round counters after delivery.
 
 ## (e) New section — Which workflow? (decide first)
 - Human wants an **image + an ad / caption** → use the AD workflow (artist → copywriter → deliver
@@ -62,9 +64,11 @@ It prints `MEDIA:<...landing.zip>` (index.html + the images). Post that line in 
 6. **HTML → <DEV_NAME>** — run `assign-to-<DEV_SLUG>` with ALL image paths (`--image`) + the
    copywriter's copy (`--copy "..."`) + the brief (`--prompt`). Wait for `HTML:<path>`; revise via
    `assign-to-<DEV_SLUG> --prompt "<feedback>"` (no `--image`) or accept. Honor `CAP_REACHED`.
-7. **PACKAGE → `package-landing`** — zips `index.html` + images, prints `MEDIA:<...landing.zip>`.
-8. **DELIVER (General)** — `send_message` to `telegram:<GROUP_ID>` (no thread id = General) with a
-   short in-character intro PLUS the `MEDIA:<...landing.zip>` line on its own line. Then STOP.
+7. **REVIEW (autonomous)** — before packaging, run `assign-to-<DEV_SLUG>/scripts/delegate.py
+   --show-brief` to recall the criteria (the dev topic session has no General brief), judge the page
+   on them, and revise (always at least one refinement) until good or `CAP_REACHED`.
+8. **PACKAGE + DELIVER (General)** — run `package-landing/scripts/package.py --caption "..."`. It
+   zips AND posts the `.zip` into General itself (sendDocument), resets the counters. Then STOP.
 
 ## (g) Extend the LOOP GUARD (do not break)
 - Add `@<DEV_USERNAME>` to the list of worker handles you must NEVER type yourself. Delegation to

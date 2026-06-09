@@ -153,7 +153,12 @@ Reține `<TOPIC_ID>` și `<GROUP_ID>`.
 - **`SOUL.md` CEO:** adaugă fluxul **secvențial complet** (în limba echipei), păstrând LOOP GUARD:
   1. prezintă noul membru (nume/rol/topic Copywriting, `@<copywriter>`);
   2. flux: *brief → worker imagini → `assign-to-<slug>` cu **imaginea+brief** (calea din linia
-     `MEDIA:`/`LAST_IMAGE:`) → review copy (cap) → **livrează imagine + copy în General**, apoi STOP*;
+     `MEDIA:`/`LAST_IMAGE:`) → **review copy AUTONOM** (recuperează criteriile cu
+     `assign-to-<slug>/scripts/delegate.py --show-brief`, fiindcă topicul Copywriting n-are brief-ul
+     din General; fă mereu cel puțin o rundă de rafinare, cere TU îmbunătățiri fără să aștepți omul;
+     cap) → **livrează imagine + copy DETERMINIST în General**: rulează `deliver.py` al ARTISTULUI cu
+     copy-ul final drept caption (`assign-to-<artist_slug>/scripts/deliver.py --caption "<copy>"`) —
+     NU `MEDIA:` în proză (ai fi în topicul greșit) → apoi STOP*;
   3. regula dură: „ca să delegi copy, rulează skill-ul `assign-to-<slug>` cu `--image` (prima
      rundă); NU tasta `@<copywriter>` în proză"; cap **per worker**; workerii nu vorbesc între ei.
 

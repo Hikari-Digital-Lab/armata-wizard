@@ -45,10 +45,18 @@ import os
 import pathlib
 import re
 import shutil
+import sys
 import time
 import urllib.parse
 import urllib.request
 import uuid
+
+# Make Romanian (diacritics) output safe on any console, incl. Windows cp1252.
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 HERE = pathlib.Path(__file__).resolve().parent
 SKILL_DIR = HERE.parent
@@ -102,7 +110,7 @@ def _load_state(p):
     try:
         return json.loads(p.read_text(encoding="utf-8"))
     except Exception:
-        return {"round": 0, "ts": 0, "jobdir": ""}
+        return {"round": 0, "ts": 0, "jobdir": "", "brief": ""}
 
 
 def _post_text(token, payload):
@@ -207,6 +215,8 @@ def main():
     ap.add_argument("--copy-file", help="path to a file with the page copy (round 1)")
     ap.add_argument("--image", action="append", default=[], help="image path (repeatable, round 1)")
     ap.add_argument("--reset", action="store_true")
+    ap.add_argument("--show-brief", action="store_true",
+                    help="print the stored ROUND 1 brief/criteria for the current task")
     ap.add_argument("--worker", default=cfg["worker_mention"])
     ap.add_argument("--thread", default=str(cfg["thread_id"]))
     ap.add_argument("--max-rounds", type=int, default=int(cfg["max_rounds"]))
@@ -220,8 +230,16 @@ def main():
     state_file = _state_path(worker)
 
     if a.reset:
-        state_file.write_text(json.dumps({"round": 0, "ts": time.time(), "jobdir": ""}))
+        state_file.write_text(json.dumps({"round": 0, "ts": time.time(), "jobdir": "", "brief": ""}))
         print(f"RESET: round counter for {worker} cleared. Next delegation will be ROUND 1.")
+        return
+
+    if a.show_brief:
+        brief = (_load_state(state_file) or {}).get("brief", "")
+        if brief:
+            print(f"CURRENT_BRIEF (criteriile pe care le-ai trimis workerului):\n{brief}")
+        else:
+            print("NO_BRIEF: niciun brief stocat (probabil n-ai delegat încă pentru acest task).")
         return
 
     if not a.prompt and not a.copy and not a.copy_file:
@@ -237,7 +255,7 @@ def main():
     st = _load_state(state_file)
     now = time.time()
     if now - st.get("ts", 0) > a.reset_gap:
-        st = {"round": 0, "ts": now, "jobdir": ""}
+        st = {"round": 0, "ts": now, "jobdir": "", "brief": ""}
 
     nxt = st.get("round", 0) + 1
     if nxt > a.max_rounds:
@@ -247,6 +265,12 @@ def main():
             "package-landing skill, and deliver the zip to the user in General."
         )
         return
+
+    # Persist the ROUND 1 brief so the review turn (a SEPARATE topic session with NO General
+    # context) can recall the criteria via --show-brief.
+    brief = st.get("brief", "") or ""
+    if nxt == 1:
+        brief = a.prompt or ""
 
     copy_text = a.copy
     if not copy_text and a.copy_file:
@@ -313,7 +337,7 @@ def main():
         print("ERROR: Telegram rejected the message (check token / chat id / thread / images).")
         return
 
-    state_file.write_text(json.dumps({"round": nxt, "ts": now, "jobdir": st_jobdir}))
+    state_file.write_text(json.dumps({"round": nxt, "ts": now, "jobdir": st_jobdir, "brief": brief}))
     kind = f"with {len(a.image)} image(s)" if a.image else "revision (feedback only)"
     print(f"DELEGATED ROUND {nxt} to {worker} ({kind}). (cap {a.max_rounds})")
     print(f"JOBDIR:{st_jobdir}")
