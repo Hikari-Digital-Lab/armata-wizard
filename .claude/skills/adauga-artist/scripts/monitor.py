@@ -15,12 +15,15 @@ Usage:
 The threshold should be (sum of per-worker caps) + 1, e.g. cap 3 + a couple workers => ~5.
 """
 import argparse
+import os
 import pathlib
 import subprocess
 import sys
 import time
 
-HERMES_PROFILES = pathlib.Path.home() / ".hermes" / "profiles"
+# Respect HERMES_HOME (e.g. %LOCALAPPDATA%\hermes on Windows); only fall back to ~/.hermes.
+HERMES_HOME = pathlib.Path(os.environ.get("HERMES_HOME") or pathlib.Path.home() / ".hermes")
+HERMES_PROFILES = HERMES_HOME / "profiles"
 
 
 def _delivery_count(profile):

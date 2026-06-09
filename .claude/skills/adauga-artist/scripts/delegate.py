@@ -11,8 +11,14 @@ call, REFUSES after max_rounds (prints CAP_REACHED), resets after reset_gap
 seconds idle (= a new task). With workers gated (require_mention=true) and only
 this script ever mentioning them, an infinite loop is structurally impossible.
 
-Config: reads `handoff.json` sitting NEXT TO this script:
-  {"worker_mention": "@pam_beesly_art_bot", "thread_id": "2",
+Brief recall: the round-1 prompt (the CRITERIA) is persisted in the state file. The
+CEO reviews the image in the Art-topic session, which is SEPARATE from the General
+session and therefore has NO copy of the human brief. `--show-brief` prints the stored
+criteria so the CEO can review the image against them. The companion deliver.py resets
+this counter after a successful delivery, so the next brief starts clean at ROUND 1.
+
+Config: reads `handoff.json` sitting NEXT TO this script (scripts/handoff.json):
+  {"worker_mention": "@pam_artist_bot", "thread_id": "2",
    "max_rounds": 3, "reset_gap": 600}
 Token + group chat id come from <HERMES_HOME>/.env
   (TELEGRAM_BOT_TOKEN, TELEGRAM_GROUP_ALLOWED_CHATS).
@@ -20,6 +26,7 @@ Any field can be overridden via CLI flags.
 
 Usage:
   delegate.py --prompt "ENGLISH image prompt or feedback"
+  delegate.py --show-brief
   delegate.py --reset
 """
 import argparse
@@ -27,9 +34,17 @@ import json
 import os
 import pathlib
 import re
+import sys
 import time
 import urllib.parse
 import urllib.request
+
+# Make Romanian (diacritics) output safe on any console, incl. Windows cp1252.
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 HERE = pathlib.Path(__file__).resolve().parent
 HERMES_HOME = pathlib.Path(os.environ.get("HERMES_HOME") or pathlib.Path.home() / ".hermes")
@@ -71,7 +86,7 @@ def _load_state(p):
     try:
         return json.loads(p.read_text(encoding="utf-8"))
     except Exception:
-        return {"round": 0, "ts": 0}
+        return {"round": 0, "ts": 0, "brief": ""}
 
 
 def main():
@@ -79,6 +94,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--prompt")
     ap.add_argument("--reset", action="store_true")
+    ap.add_argument("--show-brief", action="store_true",
+                    help="print the stored ROUND 1 brief/criteria for the current task")
     ap.add_argument("--worker", default=cfg["worker_mention"])
     ap.add_argument("--thread", default=str(cfg["thread_id"]))
     ap.add_argument("--max-rounds", type=int, default=int(cfg["max_rounds"]))
@@ -93,8 +110,16 @@ def main():
     state_file = _state_path(worker)
 
     if a.reset:
-        state_file.write_text(json.dumps({"round": 0, "ts": time.time()}))
+        state_file.write_text(json.dumps({"round": 0, "ts": time.time(), "brief": ""}))
         print(f"RESET: round counter for {worker} cleared. Next delegation will be ROUND 1.")
+        return
+
+    if a.show_brief:
+        brief = (_load_state(state_file) or {}).get("brief", "")
+        if brief:
+            print(f"CURRENT_BRIEF (criteriile pe care le-ai trimis workerului):\n{brief}")
+        else:
+            print("NO_BRIEF: niciun brief stocat (probabil n-ai delegat încă pentru acest task).")
         return
 
     if not a.prompt:
@@ -110,16 +135,22 @@ def main():
     st = _load_state(state_file)
     now = time.time()
     if now - st.get("ts", 0) > a.reset_gap:
-        st = {"round": 0, "ts": now}
+        st = {"round": 0, "ts": now, "brief": ""}
 
     nxt = st.get("round", 0) + 1
     if nxt > a.max_rounds:
         print(
             f"CAP_REACHED: {a.max_rounds} rounds already used for this task. "
             f"Do NOT delegate to {worker} again — pick the best result so far, "
-            "deliver it to the user in the General topic, and stop."
+            "deliver it to the user in the General topic (deliver.py), and stop."
         )
         return
+
+    # Persist the ROUND 1 prompt as the task brief/criteria so the review turn (a SEPARATE
+    # Art-topic session that has NO General context) can recall it via --show-brief.
+    brief = st.get("brief", "") or ""
+    if nxt == 1:
+        brief = a.prompt
 
     text = f"{worker} ROUND {nxt}: {a.prompt}"
     payload = {"chat_id": chat_id, "text": text}
@@ -137,7 +168,7 @@ def main():
         print("ERROR: Telegram rejected the message (check token / chat id / thread).")
         return
 
-    state_file.write_text(json.dumps({"round": nxt, "ts": now}))
+    state_file.write_text(json.dumps({"round": nxt, "ts": now, "brief": brief}))
     print(f"DELEGATED ROUND {nxt} to {worker}. (cap {a.max_rounds}) Now wait for the result.")
 
 

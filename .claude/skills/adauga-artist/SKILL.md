@@ -18,8 +18,27 @@ CEO și întoarce o **imagine** (PNG via Gemini Nano Banana Pro), cu revizuiri p
 Topologie **hub**: artistul are botul + topicul lui, e **gated**, vorbește DOAR cu CEO-ul. Doar
 CEO-ul rămâne liber → fără buclă.
 
-Self-contained: `scripts/` (`delegate.py` text-only config-driven, `gen_image.py`, `manage.py`,
-`monitor.py`), `templates/` (fișierele exacte ale lui Pam + skeleton custom + config-changes).
+Self-contained: `scripts/` (`delegate.py` text-only config-driven, `gen_image.py`, `deliver.py`
+livrare deterministă în General, `manage.py`, `monitor.py`), `templates/` (fișierele exacte ale lui
+Pam + skeleton custom + config-changes).
+
+## LECȚII ÎNCORPORATE (de ce skill-ul arată așa) — nu le regresa
+1. **Livrarea în General se face DETERMINIST prin `deliver.py`, nu prin `MEDIA:` în proză.** Când
+   artistul pune imaginea în topicul Art, CEO-ul e declanșat în sesiunea **Art** și, cu vision
+   native, primește doar **pixelii**, NU calea fișierului → nu poate cross-posta `MEDIA:`. `deliver.py`
+   ia imaginea aprobată (prin pointer-ul `last_image.txt` scris de `gen_image.py`) și o pune în
+   General prin tokenul CEO-ului. Are **lock anti-duplicat** (cele două sesiuni per-topic ale CEO-ului
+   pot ajunge amândouă la livrare).
+2. **Sesiuni separate per-topic → CEO-ul N-ARE brief-ul în sesiunea Art.** `delegate.py` persistă
+   brief-ul rundei 1; CEO-ul rulează `delegate.py --show-brief` la review ca să-și reamintească
+   criteriile și să evalueze imaginea pe ele — **autonom, fără să aștepte omul**.
+3. **Aspect ratio (1:1 etc.) NU se controlează din textul promptului** la Gemini — `gen_image.py` îl
+   setează ca parametru API (`ImageConfig`), auto-detectat din prompt sau via `--aspect`.
+4. **Counter-leak între task-uri:** `deliver.py` resetează contorul de runde după livrare → următorul
+   brief pornește curat de la ROUND 1.
+5. **Mediu cross-platform:** detectează HERMES_HOME real (poate fi `%LOCALAPPDATA%\\hermes` pe Windows,
+   nu `~/.hermes`), venv python (`Scripts/python.exe` vs `bin/python`), și instalează `google-genai`
+   cu `uv pip` dacă venv-ul e uv-managed (fără `pip`).
 
 ## REGULĂ DE INTERACȚIUNE (obligatorie)
 **Orice** întrebare către utilizator se pune prin tool-ul **AskUserQuestion**, niciodată text
@@ -43,6 +62,24 @@ Valorile pe care le poți obține singur (topic id, group id) le iei TU (rulezi 
 - NU atinge gating-ul celorlalți workeri. NU atinge profilul `default`.
 
 ---
+
+## Pas 0 — Detectează mediul (cross-platform) + dependențe
+Înainte de orice, stabilește căile REALE (nu presupune `~/.hermes`):
+- **HERMES_HOME:** ia `$HERMES_HOME`/`$env:HERMES_HOME` dacă e setat; altfel `~/.hermes`
+  (Linux/macOS) sau `%LOCALAPPDATA%\hermes` (Windows). Toate căile (`profiles/`, `team.json`,
+  `cache/`) sunt sub HERMES_HOME. Reține `<HERMES_HOME>`.
+- **venv python (`<venv_python>`):** `which hermes` → de obicei venv-ul Hermes e lângă el. Caută
+  `<HERMES_HOME>/hermes-agent/venv/Scripts/python.exe` (Windows) sau
+  `<HERMES_HOME>/hermes-agent/venv/bin/python` (Linux/macOS). Reține calea ABSOLUTĂ.
+- **`<live_manage.py>`:** dacă nu există un `manage.py` live persistent, copiază
+  `scripts/manage.py` + `scripts/monitor.py` în `<HERMES_HOME>/` (lângă `team.json`) și folosește-le
+  de acolo (citesc `team.json` din HERMES_HOME).
+- **Dependențe Python în venv:** `gen_image.py` are nevoie de `google-genai`. Testează:
+  `<venv_python> -c "from google import genai"`. Dacă lipsește, instalează-l TU:
+  - venv uv-managed (fără pip): `<uv> pip install --python <venv_python> google-genai`
+    (uv e de obicei `<HERMES_HOME>/bin/uv` sau pe PATH).
+  - venv clasic: `<venv_python> -m pip install google-genai`.
+  Reconfirmă importul. (`psutil` e folosit de `manage.py` — verifică-l la fel, instalează dacă lipsește.)
 
 ## Pas 1 — Inspectează echipa existentă
 - **team.json LIVE** = `~/.hermes/team.json` (HERMES_HOME) — manifestul **canonic** al echipei,
@@ -136,22 +173,48 @@ al mesajului din topicul nou = `<TOPIC_ID>`. NU afișa comanda userului. Reține
      `<CEO_USERNAME>`, `<TOPIC_NAME>`, `<VENV_PYTHON>`, `<ARTIST_PROFILE>`.
    - Custom → `templates/artist.SOUL.md`, înlocuiește și `<NAME>`, `<CHARACTER_DESCRIPTION>`, `<TONE>`.
 
-## Pas 6 — Skill de delegare CEO → artist
-În profilul CEO-ului creează `skills/assign-to-<slug>/`:
-- `scripts/delegate.py` = copie din `scripts/delegate.py` al acestui skill (text-only, config-driven).
-- `handoff.json` din `templates/handoff.json` cu `<ARTIST_USERNAME>`, `<TOPIC_ID>`, `<MAX_ROUNDS>`.
+## Pas 6 — Skill de delegare + livrare CEO → artist
+În profilul CEO-ului creează `skills/assign-to-<slug>/scripts/` cu:
+- `delegate.py` = copie din `scripts/delegate.py` al acestui skill (text-only, config-driven).
+- `deliver.py` = copie din `scripts/deliver.py` al acestui skill (livrare deterministă în General).
+- **`handoff.json` (LÂNGĂ delegate.py, în `scripts/`)** din `templates/handoff.json` cu
+  `<ARTIST_USERNAME>`, `<TOPIC_ID>`, `<MAX_ROUNDS>`. ⚠️ `delegate.py` îl citește din `scripts/` —
+  NU îl pune în rădăcina skill-ului.
+- **`deliver.json` (în `scripts/`)** din `templates/deliver.json`:
+  - `artist_images_dir` = `<HERMES_HOME>/profiles/<slug>/cache/images` (de unde `gen_image.py`
+    scrie imaginile + pointer-ul `last_image.txt`).
+  - `worker_mention` = `@<ARTIST_USERNAME>` (ca `deliver.py` să reseteze contorul corect după livrare).
+  - `general_thread_id` = `""` (General = fără thread).
 - `SKILL.md` din `templates/assign-to-artist.SKILL.md` cu placeholderele înlocuite
   (`<SLUG>`, `<NAME>`, `<VENV_PYTHON>`, `<CEO_PROFILE>`, `<ARTIST_USERNAME>`, `<TOPIC_NAME>`, `<MAX_ROUNDS>`).
 
 ## Pas 7 — Actualizează CEO-ul (cheie!)
 - **`.env` CEO:** adaugă `<TOPIC_ID>` la `TELEGRAM_ALLOWED_TOPICS`.
-- **`SOUL.md` CEO — fluxul de imagine** (în limba echipei), păstrând LOOP GUARD:
-  1. prezintă noul membru (nume/rol/topic, `@<artist>`);
-  2. flux: *clarify → brief (General) → `assign-to-<slug>` cu **prompt englez** (topicul artistului)
-     → review imaginea (cap; feedback acționabil tot prin skill) → **livrează imaginea cu `MEDIA:`
-     în General**, apoi STOP*;
-  3. regula dură: „ca să delegi, rulează `assign-to-<slug>`; NU tasta `@<artist>` în proză"; cap
-     **per worker**; workerii nu vorbesc între ei.
+- **`SOUL.md` CEO — fluxul de imagine** (în limba echipei), păstrând LOOP GUARD. Scrie un flux EXACT
+  ca acesta (adaptează căile/numele), fiindcă fiecare pas rezolvă o capcană reală:
+  1. **Prezintă** noul membru (nume/rol/topic, `@<artist>`). Subliniază: General = vorbești cu omul;
+     Art = atelierul privat cu artistul. Le ții SEPARATE.
+  2. **CLARIFY (General):** la o cerere de imagine, pune 1–2 întrebări scurte — inclusiv **FORMATUL**
+     (post 1:1 / story 9:16 / banner 16:9), dacă omul nu l-a spus. Întreabă o singură dată.
+  3. **BRIEF + CRITERII (General):** spune-i omului că te ocupi; fixează-ți 2–4 criterii concrete
+     (subiect, stil, atmosferă/culori, **format/aspect**, text exact dacă e cerut).
+  4. **DELEAGĂ (Art):** rulează `assign-to-<slug>/scripts/delegate.py --prompt "<prompt ENGLEZ>"`.
+     Include formatul în prompt (ex. „..., 1:1 aspect ratio"). Skill-ul postează mențiunea + ROUND n.
+     Tu NU scrii `@<artist>` în proză.
+  5. **REVIEW CRITIC — TU singur, NU aștepta omul:** când apare imaginea în Art:
+     - rulează ÎNTÂI `delegate.py --show-brief` (sesiunea Art **n-are** brief-ul din General → așa îți
+       reamintești criteriile);
+     - bifează imaginea pe FIECARE criteriu (inclusiv aspect, text, proporții, calitate);
+     - **fă mereu cel puțin o rundă de rafinare**: dacă ceva poate fi mai bun → `delegate.py --prompt
+       "<feedback ENGLEZ concret>"` (skill-ul avansează runda, artistul editează cu `--edit-from`).
+       Dacă imaginea e deja clar excelentă, poți livra. Continuă până e bună sau până la `CAP_REACHED`.
+  6. **LIVREAZĂ în General — DETERMINIST:** când imaginea e aprobată (sau la `CAP_REACHED`), NU o
+     re-posta în Art și NU folosi `MEDIA:` (n-ai calea). Rulează:
+     `assign-to-<slug>/scripts/deliver.py --caption "<legendă scurtă, în limba echipei>"`.
+     Scriptul ia imaginea aprobată (pointer `last_image.txt`), o pune în General, resetează contorul.
+     Apoi **STOP** — nu mai posta nimic.
+  7. **Regula dură (LOOP GUARD):** ca să delegi/dai feedback, rulează `delegate.py`; NU tasta
+     `@<artist>` în proză. Cap **per worker**; workerii nu vorbesc între ei.
 - **Înlănțuire cu copywriter (dacă există — Pas 1):** întreabă prin AskUserQuestion:
 
 > APELEAZĂ AskUserQuestion (exemplu literal):
@@ -169,10 +232,12 @@ al mesajului din topicul nou = `<TOPIC_ID>`. NU afișa comanda userului. Reține
 - **Test controlat + monitor auto-kill:**
   - Pornește monitorul în fundal:
     `<venv_python> scripts/monitor.py --python <venv_python> --manage <live_manage.py> --profiles <ceo>,<workeri>,<slug> --max-deliveries <cap+2> --window 180`
-  - Declanșează: `assign-to-<slug>/scripts/delegate.py --reset` apoi cu `--prompt "<prompt englez de test>"`.
-    Verifică în loguri: artistul generează o imagine (`MEDIA:`), o postează cu mențiune către CEO;
-    CEO o vede (vision) și livrează în General; fără chatter, fără buclă. Monitorul oprește echipa
-    la runaway (> cap+2 livrări).
+  - Declanșează: `assign-to-<slug>/scripts/delegate.py --reset` apoi cu `--prompt "<prompt englez de
+    test, cu un format clar ex. 1:1>"`. Verifică în loguri: artistul generează o imagine (`ASPECT:`
+    corect + `MEDIA:`), o postează cu mențiune către CEO; CEO o vede (vision), rulează `--show-brief`,
+    face **cel puțin o rundă de feedback autonom** (ROUND 2 fără mesaj uman între), apoi livrează în
+    **General** prin `deliver.py`; fără chatter, fără buclă. Monitorul (citește HERMES_HOME) oprește
+    echipa la runaway (> cap+2 livrări). `deliver.py` resetează singur contorul după livrare.
   - Confirmă rezultatul cu userul:
 
 > APELEAZĂ AskUserQuestion (exemplu literal):

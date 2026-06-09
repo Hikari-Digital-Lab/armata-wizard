@@ -1,0 +1,5 @@
+{
+  "artist_images_dir": "<HERMES_HOME>/profiles/<SLUG>/cache/images",
+  "worker_mention": "@<ARTIST_USERNAME>",
+  "general_thread_id": ""
+}

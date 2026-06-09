@@ -18,8 +18,10 @@ Turns an English brief (or a revision note + the previous image) into a PNG, via
 Retries with backoff. The script loads the API key itself from the profile `.env` — you do NOT
 need to `source` anything.
 
-On success it prints two lines:
-- `LAST_IMAGE:<absolute_png_path>` — remember it; pass it to `--edit-from` next round.
+On success it prints two/three lines:
+- `ASPECT:<ratio>` — printed only when an aspect ratio was applied (e.g. `ASPECT:1:1`).
+- `LAST_IMAGE:<absolute_png_path>` — remember it; pass it to `--edit-from` next round. The script
+  also writes `cache/images/last_image.txt` (a stable pointer the CEO's deliver.py uses).
 - `MEDIA:<absolute_png_path>` — **emit this line VERBATIM in your reply** so Telegram attaches the image.
 
 On exhausted retries it prints `IMAGE_ERROR: <reason>` — announce the failure in words, do NOT loop.
@@ -28,6 +30,14 @@ On exhausted retries it prints `IMAGE_ERROR: <reason>` — announce the failure 
 ```bash
 <VENV_PYTHON> <ARTIST_PROFILE>/skills/image-studio/scripts/gen_image.py --prompt "ENGLISH PROMPT"
 ```
+
+## Force an aspect ratio / format
+The TEXT prompt alone does NOT control output dimensions on Gemini — it is set as an API parameter.
+It is AUTO-DETECTED from the prompt (1:1/square, 9:16/portrait, 16:9/landscape, …); force it with:
+```bash
+<VENV_PYTHON> <ARTIST_PROFILE>/skills/image-studio/scripts/gen_image.py --prompt "ENGLISH PROMPT" --aspect 1:1
+```
+Valid: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9.
 
 ## Edit the previous image (pushback rounds, image-to-image)
 ```bash

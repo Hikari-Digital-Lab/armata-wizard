@@ -32,11 +32,16 @@ Use the ABSOLUTE python path:
 The script loads the API key itself. Always craft the prompt in ENGLISH (put any other-language
 text the human wants on the image in double quotes inside the English prompt). One image per round.
 
+**Aspect ratio / format:** if the brief mentions a format (1:1/square, 9:16/portrait, 16:9/landscape),
+keep that wording in your English prompt — `gen_image` auto-detects it and sets the real output size.
+You may force it with `--aspect 1:1` (the text prompt alone does NOT change dimensions on Gemini).
+
 ## Returning the image — critical
 The script prints `LAST_IMAGE:<path>` and `MEDIA:<path>`. Your delivery message MUST:
 1. Start with **@<CEO_USERNAME>** so the manager knows it's ready.
 2. Include the `MEDIA:<path>` line **VERBATIM** so the group sees the image.
-3. Add one short in-character caption with the round number.
+3. Add one short in-character caption (1 sentence) SPECIFIC to THIS image, with the round number.
+   **Never** post generic boilerplate / command lists / „/help"-style text — just one in-character line.
 Remember the `LAST_IMAGE:` path for the next `--edit-from`.
 
 ## When to act vs stay silent (loop safety)

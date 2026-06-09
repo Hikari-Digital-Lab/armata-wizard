@@ -27,10 +27,35 @@ Artistul generează imaginea (la pushback editează imaginea precedentă cu `--e
 
 ## Output
 - `DELEGATED ROUND <n> to @<ARTIST_USERNAME> ...` → așteaptă imaginea, apoi evaluează (ai vision).
-- `CAP_REACHED: ...` → NU mai delega; ia cea mai bună imagine de până acum și livreaz-o în General.
+- `CAP_REACHED: ...` → NU mai delega; ia cea mai bună imagine de până acum și livreaz-o în General (vezi „Livrare").
+
+## Review — recuperează criteriile (sesiunea Art n-are brief-ul din General)
+Topicul **<TOPIC_NAME>** e o conversație SEPARATĂ de General și NU conține brief-ul omului. La review,
+rulează ÎNTÂI ca să-ți reamintești criteriile pe care le-ai trimis:
+```bash
+<VENV_PYTHON> <CEO_PROFILE>/skills/assign-to-<SLUG>/scripts/delegate.py --show-brief
+```
+Apoi bifează imaginea pe fiecare criteriu (subiect, stil, **aspect/format**, text, calitate) și, dacă
+ceva poate fi mai bun, dă feedback prin `--prompt "<feedback ENGLEZ>"`. Fă mereu cel puțin o rundă de
+rafinare înainte de livrare; oprește-te când e bună sau la `CAP_REACHED`. **Tu faci review-ul singur,
+nu aștepta omul.**
+
+## Livrare — în General, DETERMINIST (NU `MEDIA:` în proză)
+Ești declanșat în sesiunea <TOPIC_NAME> și NU cunoști calea fișierului imaginii (vision native = doar
+pixeli). Livrează prin scriptul determinist, care ia imaginea aprobată (pointer `last_image.txt`),
+o pune în **General** (fără thread) prin tokenul tău și resetează contorul:
+```bash
+<VENV_PYTHON> <CEO_PROFILE>/skills/assign-to-<SLUG>/scripts/deliver.py \
+  --caption "o legendă scurtă, mândră, în limba echipei"
+```
+- `DELIVERED to General: ...` → ai TERMINAT. NU mai posta nimic (nici în Art, nici în General).
+- `SKIP: ...` (anti-duplicat) → imaginea era deja livrată; nu insista.
+- Are lock anti-duplicat (cele două sesiuni per-topic pot ajunge amândouă la livrare). Override la
+  imagine cu `--file <cale absolută>`.
 
 ## Task nou
-Contorul se auto-resetează după ~10 min inactivitate. Ca să forțezi un start curat imediat:
+`deliver.py` resetează singur contorul după livrare, deci următorul brief pornește de la ROUND 1.
+Backstop: contorul se auto-resetează și după ~10 min inactivitate. Ca să forțezi un start curat:
 ```bash
 <VENV_PYTHON> <CEO_PROFILE>/skills/assign-to-<SLUG>/scripts/delegate.py --reset
 ```
@@ -38,7 +63,6 @@ Contorul se auto-resetează după ~10 min inactivitate. Ca să forțezi un start
 ## Reguli & capcane
 - **Risc de ocolire:** ACESTA e singurul mod de delegare. Nu tasta niciodată `@<ARTIST_USERNAME>`
   în proza ta — ar ocoli cap-ul și ar risca o buclă.
-- **Promptul în engleză.** Compune un prompt de imagine clar, în engleză, din brief-ul omului.
-- **Scurgere de contor între task-uri consecutive:** brief NOU sub 10 min după unul terminat →
-  rulează MANUAL cu `--reset` înainte de prima rundă.
+- **Promptul în engleză.** Compune un prompt de imagine clar, în engleză, din brief-ul omului; include
+  formatul (ex. „1:1 aspect ratio") dacă omul a cerut unul.
 - **Un singur handoff pe rundă.** După delegare, așteaptă imaginea înainte de orice.
