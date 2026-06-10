@@ -123,9 +123,20 @@ jos ori de câte ori lucrezi aici sau rulezi/editezi skill-urile.
   `psutil`. Rulează cu venv-ul Hermes: `~/.hermes/hermes-agent/venv/bin/python`.
 - NU atinge profilul Hermes `default`.
 
+## Capcane cross-platform (Windows)
+- **Bug-ul `\U` (căi Windows în JSON):** când un `delegate.py` trimite unui worker o cale absolută
+  Windows (`C:\Users\...`), worker-ul (Gemini) o reproduce în argumentele JSON ale unui tool
+  (`vision_analyze`, `write_file`) și secvențe ca `\U` (din `\Users`) / `\h` rup parsarea → argument
+  înlocuit cu `{}` → tool-ul eșuează în tăcere (ex. web-developer-ul nu scrie `index.html`, CEO-ul
+  ajunge să compenseze). **Remediu:** emite TOATE căile către worker cu forward-slash
+  (`pathlib.Path.as_posix()`) în `delegate.py` și în spec/BRIEF; e valid în JSON ȘI pe `open()`
+  Windows, iar pe Linux/macOS e no-op. În SOUL-ul worker-ului: regulă explicită „căi cu `/`, nu `\`".
+
 ## Verificare (mereu)
 - Test controlat (declanșează un ciclu prin skill-ul de delegare) + **monitor auto-kill** care
-  oprește boții dacă apar > cap+1 livrări (runaway).
+  oprește boții la runaway. Prag: pentru un singur worker `cap+1`; pentru un **lanț cu mai mulți
+  workeri** (ex. landing: artist + copywriter + dev) folosește **suma capurilor + 1** (altfel
+  `cap+2` dă fals-pozitiv). Lărgește fereastra pentru fluxuri lungi (`--window 600`).
 - Confirmă: conectare „✓ telegram connected", ZERO „💻 terminal"/„⚡ Interrupting", limba corectă,
   livrare în General, `handoff_*.json` cu `round` corect, fără buclă.
 

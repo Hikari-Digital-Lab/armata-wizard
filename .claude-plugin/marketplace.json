@@ -11,7 +11,7 @@
       "name": "armata-wizard",
       "source": "./plugins/armata-wizard",
       "description": "Construiește echipe de agenți AI care colaborează pe Telegram în stil The Office, pe Hermes Agent + Google Gemini. Skill-uri: instaleaza-hermes (bootstrap), adauga-ceo (fundația), adauga-artist, adauga-copywriter, adauga-web-developer, adauga-membru-echipa, adauga-avocat, adauga-secretara.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": {
         "name": "silviu",
         "email": "psilviu94@gmail.com"

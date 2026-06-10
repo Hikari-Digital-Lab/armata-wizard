@@ -180,11 +180,18 @@ def _write_brief(jobdir, prompt, copy_text, image_names, out_html, round_no, fee
             f.write(f"\n\n## Feedback (ROUND {round_no}) — revise index.html in place\n{feedback}\n")
         return spec
     first_img = image_names[0] if image_names else "image.png"
+    # Use forward-slash (POSIX) paths everywhere the web dev will read them. A Windows path
+    # like C:\Users\... contains \U, an INVALID JSON escape, which corrupts the model's
+    # tool-call arguments ("Unrepairable tool_call ... replaced with empty object") so the
+    # file never gets written. Forward slashes are valid JSON AND valid for open()/write on
+    # Windows; on Linux/macOS as_posix() is a no-op (paths already use /). Cross-platform safe.
+    out_posix = out_html.as_posix()
+    spec_posix = spec.as_posix()
     lines = [
         "# Landing page build spec (for the web developer)",
         "",
-        f"OUTPUT:{out_html}",
-        f"SPEC:{spec}",
+        f"OUTPUT:{out_posix}",
+        f"SPEC:{spec_posix}",
         "",
         "## Brief (from the human, via the CEO)",
         (prompt or "(no explicit brief — use the page copy below)").strip(),
@@ -201,7 +208,9 @@ def _write_brief(jobdir, prompt, copy_text, image_names, out_html, round_no, fee
         "- index.html = a single self-contained file (inline CSS, NO CDN / external fonts).",
         f'- Reference the images by basename (e.g. src="{first_img}").',
         "- Responsive + accessible (alt, semantic tags). Content language = the brief's language.",
-        f"- Write the file EXACTLY at: {out_html}",
+        "- Build the page from THIS spec (filenames + copy). Do NOT call vision_analyze on the "
+        "image paths — just reference each image by its basename in an <img> tag.",
+        f"- Write the file EXACTLY at (forward slashes, valid on Windows): {out_posix}",
     ]
     spec.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return spec
@@ -299,7 +308,7 @@ def main():
             spec = _write_brief(jobdir, a.prompt, copy_text, image_names, out_html, nxt)
             caption = (
                 f"{worker} ROUND {nxt}: Build the landing page.\n"
-                f"SPEC:{spec}\nOUTPUT:{out_html}\n"
+                f"SPEC:{spec.as_posix()}\nOUTPUT:{out_html.as_posix()}\n"
                 "Read the spec, reference images by basename, write index.html at OUTPUT, "
                 "and reply with HTML:<path>."
             )
@@ -321,7 +330,7 @@ def main():
             spec = jobdir / "BRIEF.md"
             text = (
                 f"{worker} ROUND {nxt}: Revise the page. New feedback appended to the spec.\n"
-                f"SPEC:{spec}\nOUTPUT:{out_html}\n"
+                f"SPEC:{spec.as_posix()}\nOUTPUT:{out_html.as_posix()}\n"
                 f"Feedback: {a.prompt}\nRewrite index.html at OUTPUT, then reply HTML:<path>."
             )
             payload = {"chat_id": chat_id, "text": text}

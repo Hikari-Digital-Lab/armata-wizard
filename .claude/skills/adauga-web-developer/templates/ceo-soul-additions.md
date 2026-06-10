@@ -54,9 +54,9 @@ The script has an anti-duplicate lock and resets the round counters after delive
 ## (f) New section — The LANDING PAGE workflow (follow in this exact order)
 1. **CLARIFY (General)** — ask 1–2 short questions: theme/brand, page goal & audience, what
    text/offer, how many sections / visual vibe. Ask once, then wait.
-2. **BRIEF (General)** — short brief in <LANGUAGE>. Decide **2 or 3 images** by how rich the page is.
+2. **BRIEF (General)** — short brief in <LANGUAGE>. Decide **3 to 5 images** by how rich the page is.
 3. **IMAGES → artist** — delegate to the artist (`assign-to-<ARTIST_SLUG>`) asking for the SET of
-   2-3 cohesive site images in ONE prompt (English). Keep ALL the returned `MEDIA:` paths.
+   3-5 cohesive site images in ONE prompt (English). Keep ALL the returned `MEDIA:` paths.
 4. **IMAGES → review** — good → keep all final image paths; else revise (cap).
 5. **PAGE COPY → copywriter** — delegate to the copywriter (`assign-to-<COPYWRITER_SLUG>`) with ALL
    the image paths (repeat `--image`) and a `--prompt` saying it's **page copy** (hero + one section
@@ -64,6 +64,10 @@ The script has an anti-duplicate lock and resets the round counters after delive
 6. **HTML → <DEV_NAME>** — run `assign-to-<DEV_SLUG>` with ALL image paths (`--image`) + the
    copywriter's copy (`--copy "..."`) + the brief (`--prompt`). Wait for `HTML:<path>`; revise via
    `assign-to-<DEV_SLUG> --prompt "<feedback>"` (no `--image`) or accept. Honor `CAP_REACHED`.
+   ⚠️ **NEVER write `index.html` yourself** — the page is <DEV_NAME>'s job. If you don't get an
+   `HTML:<path>` line (or the file is missing), re-delegate via `assign-to-<DEV_SLUG> --prompt
+   "<what's missing>"` until it appears, or stop at `CAP_REACHED`. You only package (step 8); you
+   never build the page.
 7. **REVIEW (autonomous)** — before packaging, run `assign-to-<DEV_SLUG>/scripts/delegate.py
    --show-brief` to recall the criteria (the dev topic session has no General brief), judge the page
    on them, and revise (always at least one refinement) until good or `CAP_REACHED`.

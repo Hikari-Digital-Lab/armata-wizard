@@ -1,6 +1,6 @@
 ---
 name: adauga-web-developer
-description: "Adaugă un agent WEB DEVELOPER (worker care primește 2-3 imagini + copy-ul paginii și construiește un index.html self-contained) peste o echipă Hermes existentă. Default Dwight Schrute (The Office) cu fișiere gata-făcute; opțional persona custom. Topologie hub: dev-ul e gated, raportează DOAR la CEO, fără buclă. Lanț: CEO → artist (2-3 imagini) → copywriter (copy pagină) → dev (HTML) → CEO împachetează un .zip (index.html + imagini) și-l livrează în General. Wire-uiește lanțul peste artistul + copywriter-ul existenți (le actualizează SOUL-ul; upgrade multi-imagine la delegarea copywriter-ului)."
+description: "Adaugă un agent WEB DEVELOPER (worker care primește 2-5 imagini + copy-ul paginii și construiește un index.html self-contained) peste o echipă Hermes existentă. Default Dwight Schrute (The Office) cu fișiere gata-făcute; opțional persona custom. Topologie hub: dev-ul e gated, raportează DOAR la CEO, fără buclă. Lanț: CEO → artist (2-5 imagini) → copywriter (copy pagină) → dev (HTML) → CEO împachetează un .zip (index.html + imagini) și-l livrează în General. Wire-uiește lanțul peste artistul + copywriter-ul existenți (le actualizează SOUL-ul; upgrade multi-imagine la delegarea copywriter-ului)."
 version: 1.0.0
 author: silviu
 license: Apache-2.0
@@ -14,7 +14,7 @@ metadata:
 
 Adaugă **UN** worker web developer peste o echipă existentă (construită cu `adauga-ceo` +
 `adauga-artist` + `adauga-copywriter`, sau `reproducere-agenti-office` / `echipa-boti-hermes`).
-Dev-ul primește **2-3 imagini** (de la artist) + **copy-ul paginii** (de la copywriter) + brief-ul
+Dev-ul primește **2-5 imagini** (de la artist) + **copy-ul paginii** (de la copywriter) + brief-ul
 și întoarce **un singur `index.html` self-contained** (CSS inline, fără CDN, imagini prin basename).
 CEO-ul împachetează `index.html` + imaginile într-un **`.zip`** și-l livrează omului în General.
 Topologie **hub**: dev-ul are botul + topicul lui, e **gated**, vorbește DOAR cu CEO-ul. Doar
@@ -77,7 +77,7 @@ Sunt >4 valori → fă **2 runde** AUQ:
 > Î4 — „Câte runde maxim CEO↔dev?"                 opțiuni: ["3 (recomandat)"]   (alt număr → „Other")
 
 > APELEAZĂ AskUserQuestion — Runda 2 (exemplu literal):
-> Î1 — „Câte imagini pe pagină?"     opțiuni: ["2-3, CEO decide după brief (recomandat)"]   (număr fix → „Other")
+> Î1 — „Câte imagini pe pagină?"     opțiuni: ["3-5, CEO decide după brief (recomandat)"]   (număr fix → „Other")
 > Î2 — „De unde vine copy-ul paginii?"  opțiuni: ["Prin copywriter (dacă există)"], ["Dev-ul scrie singur copy + HTML"]
 > (Dacă a ales custom la Runda 1: adaugă întrebări pentru nume + slug + descriere caracter → „Other".)
 
@@ -97,7 +97,8 @@ Sunt >4 valori → fă **2 runde** AUQ:
 >   3. Dă-i un nume afișat (ex. „Dwight Schrute").
 >   4. Dă-i un username care se TERMINĂ obligatoriu în „bot" (ex. dwight_webdev_bot).
 >   5. BotFather îți trimite un TOKEN (șir lung cu „:"). Copiază-l — îl ceri mai jos.
->   6. Trimite:  /setprivacy  → alege botul → „Disable".
+>   6. (OPȚIONAL) Trimite:  /setprivacy  → alege botul → „Disable".
+>      Dev-ul e gated (răspunde DOAR la mențiune), deci privacy on/off nu schimbă nimic — poți sări.
 >   7. Trimite:  /mybots → alege botul → „Bot Settings" →
 >      „Group Privacy / Bot-to-Bot Communication Mode" → ON.
 >
@@ -106,10 +107,10 @@ Sunt >4 valori → fă **2 runde** AUQ:
 >   9. Setările grupului → Add member → caută username-ul botului → adaugă-l.
 >  10. Setările grupului → Administrators → Add admin → alege botul → confirmă.
 >
-> C. Creează topicul lui și scrie un mesaj
+> C. Creează topicul lui
 >  11. În grup, lista de topicuri → „+" → creează un topic nou numit „<TOPIC_NAME>".
->  12. Intră în „<TOPIC_NAME>" și scrie un mesaj care MENȚIONEAZĂ botul, ex.: @dwight_webdev_bot salut
->      (mesajul cu mențiune îmi permite să citesc id-ul topicului chiar cu privacy on).
+>  12. NU scrie încă nimic în topic — îți cer eu mesajul de test imediat, la Pasul 4, DUPĂ ce opresc
+>      boții (dacă-l scrii acum cu botul CEO pornit, gateway-ul consumă update-ul și se pierde id-ul).
 > ─────────────────────────────────────────────────────────────
 
 > APELEAZĂ AskUserQuestion (exemplu literal):
@@ -130,14 +131,19 @@ Sunt >4 valori → fă **2 runde** AUQ:
 >   - Verifică tu token-ul cu `getMe` → reține `username`-ul real al dev-ului.
 
 ## Pas 4 — Ia topic id-ul nou (Claude rulează singur — userul NU rulează curl)
-Oprește gateway-urile (`<venv_python> <live_manage.py> stop`). Rulează TU `getUpdates` cu **tokenul
-noului bot**: `curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates"` → extrage `message_thread_id`
-al mesajului din topicul nou = `<TOPIC_ID>`. NU afișa comanda userului. **Dacă privacy e on și
-buffer-ul e gol**, încearcă tu cu tokenul CEO-ului (citește tot). Dacă tot nu apare, cere userului să mai posteze:
+**Ordinea contează** (altfel mesajul de test e consumat de gateway-ul CEO pornit și id-ul se pierde):
+1. **Oprește ÎNTÂI gateway-urile:** `<venv_python> <live_manage.py> stop`.
+2. **APOI cere userului (AUQ) să posteze ACUM mesajul de test** cu mențiune în topicul nou — abia
+   acum, cu boții opriți, buffer-ul Telegram îl reține:
 
-> APELEAZĂ AskUserQuestion (exemplu literal — doar dacă nu poți citi id-ul singur):
-> Întrebarea 1 — „Mai scrie te rog un mesaj în topicul nou care menționează botul (ex. @username_bot salut), apoi confirmă."
->   opțiuni: ["Gata, am scris"], ["Am nevoie de ajutor"]
+> APELEAZĂ AskUserQuestion (exemplu literal):
+> Întrebarea 1 — „Scrie te rog ACUM, în topicul nou „<TOPIC_NAME>", un mesaj care menționează botul
+>   (ex. @username_bot salut), apoi confirmă." opțiuni: ["Gata, am scris"], ["Am nevoie de ajutor"]
+
+3. **Citește TU id-ul:** `curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates"` (tokenul noului
+   bot) → extrage `message_thread_id` al mesajului din topicul nou = `<TOPIC_ID>`. NU afișa comanda
+   userului. **Dacă buffer-ul dev-ului e gol** (privacy on), încearcă cu tokenul CEO-ului (citește
+   tot). Dacă tot nu apare, cere userului să mai posteze o dată (ACELAȘI AUQ) și reia.
 
 Reține `<TOPIC_ID>` și `<GROUP_ID>`.
 
@@ -186,7 +192,7 @@ Reține `<TOPIC_ID>` și `<GROUP_ID>`.
     copywriter-ului (modul „copy de pagină"); și **upgrade la multi-imagine** al delegării
     copywriter-ului urmând `templates/copywriter-delegate-multiimage.md` (backward-compatible).
   - **Artist (dacă în lanț):** injectează `templates/artist-soul-additions.md` în SOUL-ul artistului
-    (modul „set de 2-3 imagini").
+    (modul „set de 2-5 imagini").
   - **Lipsă upstream:** sari peste injecțiile lipsă; în SOUL-ul CEO notează că imaginile/copy-ul vin
     direct de la CEO (sau dev-ul scrie copy-ul), restul fluxului identic.
 
@@ -196,13 +202,18 @@ Reține `<TOPIC_ID>` și `<GROUP_ID>`.
 - Confirmă „✓ telegram connected" (și pentru workerii cu SOUL modificat), fără erori reale, **fără**
   `📬 No home channel`. Gating: exact UN bot liber (CEO), restul gated.
 - **Test controlat + monitor auto-kill:**
-  - Pornește monitorul în fundal:
-    `<venv_python> scripts/monitor.py --python <venv_python> --manage <live_manage.py> --profiles <ceo>,<artist>,<copywriter>,<slug> --max-deliveries <cap+2> --window 240`
+  - Pornește monitorul în fundal. **Pragul = suma capurilor workerilor din lanț + 1** (NU `cap+2`):
+    un landing complet are livrări de la 3 workeri (artist + copywriter + dev), fiecare cu cap-ul lui,
+    deci `cap+2` dă fals-pozitiv. Cu 3 workeri × cap 3 → prag ≈ **10**. Lărgește și fereastra (un
+    landing cu 3-5 imagini durează): `--window 600`.
+    `<venv_python> scripts/monitor.py --python <venv_python> --manage <live_manage.py> --profiles <ceo>,<artist>,<copywriter>,<slug> --max-deliveries <suma_capurilor+1> --window 600`
   - Declanșează: cere CEO-ului în General o pagină de landing (temă + brief). Verifică în loguri (sau
-    prin fișiere): artistul livrează 2-3 imagini (`MEDIA:`), copywriter-ul scrie copy de pagină, dev-ul
-    primește album + spec și scrie `index.html` (`HTML:<cale>`), CEO rulează `package-landing` și
-    livrează `MEDIA:<zip>` în General. Confirmă: zip conține index.html + imagini, HTML referă
-    imaginile prin basename, fără chatter, fără buclă. Monitorul oprește echipa la runaway.
+    prin fișiere): artistul livrează 3-5 imagini (`MEDIA:`), copywriter-ul scrie copy de pagină, dev-ul
+    primește album + spec și **scrie EL `index.html`** (`HTML:<cale>` — verifică în `agent.log`-ul
+    dev-ului că a rulat `write_file`, NU că a scris CEO-ul pagina), CEO rulează `package-landing` și
+    livrează zip-ul în General prin `sendDocument`. Confirmă: zip conține index.html + imagini, HTML
+    referă imaginile prin basename, fără referințe externe, fără chatter, fără buclă. Monitorul
+    oprește echipa la runaway.
   - Confirmă rezultatul cu userul:
 
 > APELEAZĂ AskUserQuestion (exemplu literal):

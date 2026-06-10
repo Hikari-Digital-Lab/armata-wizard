@@ -50,6 +50,11 @@ Contorul se auto-resetează după ~10 min inactivitate. Pentru start curat imedi
 ```
 
 ## Reguli & capcane
+- **⚠️ Căi cu forward-slash (bug-ul Windows `\U`):** `delegate.py` scrie deja căile (SPEC/OUTPUT)
+  cu `/` (ex. `C:/Users/...`), fiindcă o cale cu `\U` (`\Users`) e un escape JSON invalid și
+  corupe argumentele tool-call-ului dev-ului (`vision_analyze`/`write_file` primesc `{}`) → fișierul
+  nu se mai scrie. Nu introduce manual căi cu `\` în `--prompt`/`--copy`; dacă o faci, dublează
+  backslash-urile (`\\`) sau folosește `/`.
 - **Risc de ocolire:** ACESTA e singurul mod de delegare către dev. Nu tasta niciodată
   `@<DEV_USERNAME>` în proza ta — ar ocoli cap-ul și ar risca o buclă.
 - **Imaginile + spec-ul le pregătește scriptul.** Tu nu posta nimic manual în <TOPIC_NAME>; dă

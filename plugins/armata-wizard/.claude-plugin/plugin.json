@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "armata-wizard",
   "displayName": "Armata Wizard — Agenți Office",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Construiește echipe de agenți AI care colaborează pe Telegram în stil The Office, pe Hermes Agent + Google Gemini. Include skill-urile de bootstrap, CEO și workeri (artist, copywriter, web developer, membru custom, avocat, secretară), cu anti-buclă, handoff determinist și anti-chatter integrate.",
   "author": {
     "name": "silviu",

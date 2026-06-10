@@ -228,6 +228,8 @@ $PY $MG fresh         # restart + șterge sesiuni
 | Boții răspund în engleză deși SOUL e română | sesiunea are istoric englezesc, Flash îl imită | `manage.py fresh` (restart + șterge sesiuni) |
 | `409 Conflict` la pornire | două polling-uri pe același token | token-uri distincte per profil; `--replace` |
 | Pam zice „📬 No home channel" | artefact de pornire | inofensiv; opțional setează `TELEGRAM_HOME_CHANNEL` |
+| Web-developer-ul NU scrie `index.html` (CEO-ul ajunge să-l facă); în `agent.log` apar erori `Unrepairable tool_call arguments ... replaced with empty object` | **bug-ul `\U`**: căi Windows `C:\Users\...` în argumentele JSON ale tool-ului (escape invalid) | `delegate.py` emite căile cu forward-slash (`Path.as_posix()`); în SOUL: „căi cu `/`, nu `\`"; interzice `vision_analyze` + obligă `write_file` |
+| Monitorul oprește echipa în mijlocul unui landing valid | prag prea mic (`cap+2`) pentru un lanț cu 3 workeri | prag = **suma capurilor + 1** (≈10) + `--window 600` |
 
 ---
 
